@@ -5,8 +5,10 @@ namespace IronLock::Modules::Memory {
 
 bool VerifySectionIntegrity();
 bool DetectHooks();
-bool DetectIATRedirection();
 void ErasePEHeader();
 void MangleSizeOfImage();
+bool DetectProcessHollowing();
+bool DetectInjectedThreads();
+void PatchAntiAttach();
 
 } // namespace IronLock::Modules::Memory

@@ -46,12 +46,15 @@ set(TOOLS_SOURCES
 # Memory & Integrity
 set(MEMORY_SOURCES
     src/modules/memory/Integrity.cpp
+    src/modules/memory/AntiDump.cpp
     src/modules/memory/BaitFunctions.cpp
 )
 
 # Network
 set(NETWORK_SOURCES
     src/modules/network/NetworkProtection.cpp
+    src/modules/network/VpnDetector.cpp
+    src/modules/network/CertStoreInspector.cpp
 )
 
 # Obfuscation & VM

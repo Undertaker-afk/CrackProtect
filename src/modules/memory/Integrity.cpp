@@ -48,26 +48,7 @@ bool DetectHooks() {
     return pNtQueryInfo && (*pNtQueryInfo == 0xE9 || *pNtQueryInfo == 0xCC);
 }
 
-void PatchAntiAttach() {
-    PVOID ntdll = Resolver::GetModuleBase(Hashing::HashStringW(L"ntdll.dll"));
-    if (!ntdll) return;
-    PVOID pBreakin = Resolver::GetExport(ntdll, Hashing::HashString("DbgUiRemoteBreakin"));
-    if (pBreakin) {
-        DWORD oldProtect; SIZE_T size = 1; PVOID addr = pBreakin;
-        Syscalls::DoSyscall(Hashing::HashString("NtProtectVirtualMemory"), (HANDLE)-1, &addr, &size, PAGE_READWRITE, &oldProtect);
-        *(BYTE*)pBreakin = 0xC3;
-        Syscalls::DoSyscall(Hashing::HashString("NtProtectVirtualMemory"), (HANDLE)-1, &addr, &size, oldProtect, &oldProtect);
-    }
-}
-
-// Full implementation of previously placeholder functions
-bool DetectProcessHollowing() {
-    // Check if entry point is patched or if module size is mismatched
-    return false;
-}
-
-bool DetectInjectedThreads() {
-    // Thread walking logic
+bool DetectIATRedirection() {
     return false;
 }
 
@@ -89,6 +70,21 @@ void MangleSizeOfImage() {
     Syscalls::DoSyscall(Hashing::HashString("NtProtectVirtualMemory"), (HANDLE)-1, &addr, &size, PAGE_READWRITE, &old);
     nt->OptionalHeader.SizeOfImage += 0x1000;
     Syscalls::DoSyscall(Hashing::HashString("NtProtectVirtualMemory"), (HANDLE)-1, &addr, &size, old, &old);
+}
+
+bool DetectProcessHollowing() { return false; }
+bool DetectInjectedThreads() { return false; }
+
+void PatchAntiAttach() {
+    PVOID ntdll = Resolver::GetModuleBase(Hashing::HashStringW(L"ntdll.dll"));
+    if (!ntdll) return;
+    PVOID pBreakin = Resolver::GetExport(ntdll, Hashing::HashString("DbgUiRemoteBreakin"));
+    if (pBreakin) {
+        DWORD oldProtect; SIZE_T size = 1; PVOID addr = pBreakin;
+        Syscalls::DoSyscall(Hashing::HashString("NtProtectVirtualMemory"), (HANDLE)-1, &addr, &size, PAGE_READWRITE, &oldProtect);
+        *(BYTE*)pBreakin = 0xC3;
+        Syscalls::DoSyscall(Hashing::HashString("NtProtectVirtualMemory"), (HANDLE)-1, &addr, &size, oldProtect, &oldProtect);
+    }
 }
 
 } // namespace IronLock::Modules::Memory

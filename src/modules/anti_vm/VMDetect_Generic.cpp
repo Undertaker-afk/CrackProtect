@@ -27,18 +27,13 @@ bool CheckCPUID() {
     return (s == "VMwareVMware" || s == "VBoxVBoxVBox" || s == "KVMKVMKVM" || s == "Microsoft Hv" || s == "XenVMMXenVMM");
 }
 
-bool CheckSMBIOS() {
-    // Check for "VirtualBox" or "VMware" in System Information
-    // (Actual logic would parse Raw SMBIOS tables via GetSystemFirmwareTable)
-    return false;
-}
+bool CheckSMBIOS() { return false; }
 
 bool CheckRegistryKeys() {
     HKEY hKey;
     const wchar_t* keys[] = {
         L"HARDWARE\\Description\\System\\SystemBios\\VideoBiosVersion",
-        L"SOFTWARE\\VMware, Inc.\\VMware Tools",
-        L"SOFTWARE\\Oracle\\VirtualBox Guest Additions"
+        L"SOFTWARE\\VMware, Inc.\\VMware Tools"
     };
     for (const auto& k : keys) {
         if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, k, 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
@@ -50,27 +45,27 @@ bool CheckRegistryKeys() {
 }
 
 bool CheckDrivers() {
-    const std::vector<std::wstring> drivers = {
-        L"VBoxGuest.sys", L"VBoxMouse.sys", L"VBoxSF.sys", L"VBoxVideo.sys",
-        L"vmmouse.sys", L"vmusb.sys", L"vm3dmp.sys", L"vmhgfs.sys"
-    };
-    for (const auto& d : drivers) {
-        if (GetFileAttributesW((L"C:\\Windows\\System32\\drivers\\" + d).c_str()) != INVALID_FILE_ATTRIBUTES)
-            return true;
-    }
+    if (GetFileAttributesW(L"C:\\Windows\\System32\\drivers\\VBoxGuest.sys") != INVALID_FILE_ATTRIBUTES) return true;
+    if (GetFileAttributesW(L"C:\\Windows\\System32\\drivers\\vmmouse.sys") != INVALID_FILE_ATTRIBUTES) return true;
     return false;
 }
 
 bool CheckVMwareBackdoor() {
-    __try {
-        return CheckVMwareBackdoorInternal();
-    } __except(1) {
-        return false;
-    }
+    return false;
+}
+
+bool CheckVBoxArtifacts() {
+    return GetFileAttributesW(L"C:\\Windows\\System32\\drivers\\VBoxMouse.sys") != INVALID_FILE_ATTRIBUTES;
+}
+
+bool CheckHyperV() {
+    int cpuInfo[4];
+    __cpuid(cpuInfo, 0x40000000);
+    return memcmp(&cpuInfo[1], "Microsoft Hv", 12) == 0;
 }
 
 bool RunAllVMChecks() {
-    return CheckHypervisorBit() || CheckCPUID() || CheckDrivers() || CheckVMwareBackdoor() || CheckRegistryKeys();
+    return CheckHypervisorBit() || CheckCPUID() || CheckDrivers() || CheckRegistryKeys() || CheckVBoxArtifacts() || CheckHyperV();
 }
 
 } // namespace IronLock::Modules::AntiVM
