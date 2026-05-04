@@ -7,8 +7,7 @@
 
 namespace IronLock::Core {
 
-// Decoy global state for silent corruption
-static volatile uint64_t g_InternalState = 0xFFFFFFFFFFFFFFFF;
+static volatile uint64_t g_DecoyGlobalState = 0x1234567887654321;
 
 void Response::Trigger(ThreatLevel level) {
     switch (level) {
@@ -20,36 +19,32 @@ void Response::Trigger(ThreatLevel level) {
 }
 
 void Response::SilentCorruption() {
-    // Gradually flip bits in a decoy state to cause subtle, delayed logic failures
-    g_InternalState ^= (1ULL << (std::time(nullptr) % 64));
+    // Logic Bomb: Corrupt internal state without immediate failure
+    g_DecoyGlobalState ^= (1ULL << (__rdtsc() % 64));
 }
 
 void Response::Misdirect() {
-    // In a real app, this would set a "LicenseValid" flag to true while
-    // simultaneously disabling critical functionality in a hidden way.
+    // Return fake valid results (implementation dependent on caller context)
 }
 
 void Response::DelayedCrash() {
     std::thread([]() {
         std::this_thread::sleep_for(std::chrono::minutes(5));
-        volatile int* p = (int*)0xDEADC0DE;
-        *p = 0;
+        RaiseException(0xDEADC0DE, 0, 0, NULL);
     }).detach();
 }
 
 void Response::HardTerminate() {
-    Syscalls::DoSyscall(Hashing::HashString("NtTerminateProcess"), (HANDLE)-1, 0);
+    Syscalls::DoSyscall(Hashing::HashString("NtTerminateProcess"), (HANDLE)-1, (NTSTATUS)0xC0000420);
 }
 
 void Response::FakeCorruption() {
-    // Feature 29: Fake File Corruption Response
-    MessageBoxA(NULL, "Critical error: File system corruption detected. Please restart your system.", "System Error", MB_OK | MB_ICONERROR);
+    MessageBoxA(NULL, "The application has encountered an unrecoverable disk error.", "IronLock Protection", MB_OK | MB_ICONERROR);
 }
 
 void Response::SystemBSOD() {
-    // Feature 30: System BSOD Response via NtRaiseHardError
-    uint32_t response;
-    Syscalls::DoSyscall(Hashing::HashString("NtRaiseHardError"), 0xC0000001, 0, 0, 0, 6, &response);
+    uint32_t resp;
+    Syscalls::DoSyscall(Hashing::HashString("NtRaiseHardError"), 0xC000021A, 0, 0, 0, 6, &resp);
 }
 
 } // namespace IronLock::Core

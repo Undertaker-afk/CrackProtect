@@ -5,6 +5,8 @@
 #include <winternl.h>
 #include <intrin.h>
 
+extern "C" void CheckTrapFlagInternal();
+
 namespace IronLock::Modules::AntiDebug {
 
 using namespace IronLock::Core;
@@ -119,11 +121,15 @@ bool CheckGuardPage() {
 }
 
 bool CheckTrapFlag() {
-    return false; // Requires ASM or SEH trick
+    __try {
+        CheckTrapFlagInternal();
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        return false;
+    }
+    return true;
 }
 
 bool CheckParentProcess() {
-    // Feature implementation using NtQueryInformationProcess with ProcessBasicInformation
     return false;
 }
 
@@ -150,6 +156,7 @@ bool RunUserModeChecks() {
     res |= CheckHeapFlags();
     res |= CheckTimingDelta();
     res |= CheckSoftwareBreakpoints();
+    res |= CheckTrapFlag();
     return res;
 }
 
