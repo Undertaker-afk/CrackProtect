@@ -5,30 +5,47 @@
 namespace IronLock::Core::Hashing {
 
 // FNV-1a 32-bit constants
-constexpr uint32_t FNV_OFFSET_BASIS = 0x811C9DC5;
-constexpr uint32_t FNV_PRIME = 0x01000193;
+constexpr uint32_t FNV32_OFFSET_BASIS = 0x811C9DC5;
+constexpr uint32_t FNV32_PRIME = 0x01000193;
 
-// Compile-time FNV-1a hash
-constexpr uint32_t HashString(std::string_view str) {
-    uint32_t hash = FNV_OFFSET_BASIS;
+// FNV-1a 64-bit constants
+constexpr uint64_t FNV64_OFFSET_BASIS = 0xCBF29CE484222325ULL;
+constexpr uint64_t FNV64_PRIME = 0x100000001B3ULL;
+
+// Production-ready FNV-1a 32-bit
+constexpr uint32_t HashString32(std::string_view str) {
+    uint32_t hash = FNV32_OFFSET_BASIS;
     for (char c : str) {
         hash ^= static_cast<uint8_t>(c);
-        hash *= FNV_PRIME;
+        hash *= FNV32_PRIME;
     }
     return hash;
 }
 
-// Compile-time FNV-1a hash (wide string)
-constexpr uint32_t HashStringW(std::wstring_view str) {
-    uint32_t hash = FNV_OFFSET_BASIS;
-    for (wchar_t c : str) {
-        // Simple downcast for hashing, assuming ASCII-compatible wide chars for system names
-        hash ^= static_cast<uint8_t>(c & 0xFF);
-        hash *= FNV_PRIME;
-        hash ^= static_cast<uint8_t>((c >> 8) & 0xFF);
-        hash *= FNV_PRIME;
+// Production-ready FNV-1a 64-bit
+constexpr uint64_t HashString64(std::string_view str) {
+    uint64_t hash = FNV64_OFFSET_BASIS;
+    for (char c : str) {
+        hash ^= static_cast<uint8_t>(c);
+        hash *= FNV64_PRIME;
     }
     return hash;
 }
+
+// Support for wide strings
+constexpr uint32_t HashString32W(std::wstring_view str) {
+    uint32_t hash = FNV32_OFFSET_BASIS;
+    for (wchar_t c : str) {
+        hash ^= static_cast<uint8_t>(c & 0xFF);
+        hash *= FNV32_PRIME;
+        hash ^= static_cast<uint8_t>((c >> 8) & 0xFF);
+        hash *= FNV32_PRIME;
+    }
+    return hash;
+}
+
+// Alias for common usage
+constexpr uint32_t HashString(std::string_view str) { return HashString32(str); }
+constexpr uint32_t HashStringW(std::wstring_view str) { return HashString32W(str); }
 
 } // namespace IronLock::Core::Hashing

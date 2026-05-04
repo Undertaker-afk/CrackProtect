@@ -3,8 +3,13 @@
 #include "Hashing.h"
 #include <thread>
 #include <chrono>
+#include <windows.h>
+#include <atomic>
 
 namespace IronLock::Core {
+
+static volatile uint64_t g_DecoyGlobalState = 0x1234567887654321;
+static std::atomic<bool> g_MisdirectMode{ false };
 
 void Response::Trigger(ThreatLevel level) {
     switch (level) {
@@ -16,37 +21,38 @@ void Response::Trigger(ThreatLevel level) {
 }
 
 void Response::SilentCorruption() {
-    // Logic bomb: gradually corrupt a critical application flag
+    g_DecoyGlobalState ^= (1ULL << (__rdtsc() % 64));
 }
 
 void Response::Misdirect() {
-    // Mislead the analyst by returning fake license/auth results
+    // Enable Misdirect Mode
+    // When active, other parts of the application (or SDK) can check this
+    // and return fake "Success" or "License Valid" results to the analyst.
+    g_MisdirectMode.store(true);
+}
+
+bool Response::IsMisdirected() {
+    return g_MisdirectMode.load();
 }
 
 void Response::DelayedCrash() {
     std::thread([]() {
         std::this_thread::sleep_for(std::chrono::minutes(5));
-        // Trigger a crash that looks like a memory corruption
-        volatile int* p = (int*)0xDEADC0DE;
-        *p = 0;
+        RaiseException(0xDEADC0DE, 0, 0, NULL);
     }).detach();
 }
 
 void Response::HardTerminate() {
-    // Feature 30: System BSOD Response (Needs SeShutdownPrivilege often, but can try NtRaiseHardError)
-    // For now, hard terminate via direct syscall
-    Syscalls::DoSyscall(Hashing::HashString("NtTerminateProcess"), (HANDLE)-1, 0);
+    Syscalls::DoSyscall(Hashing::HashString("NtTerminateProcess"), (HANDLE)-1, (NTSTATUS)0xC0000420);
 }
 
 void Response::FakeCorruption() {
-    // Feature 29: Fake File Corruption Response
-    // Display a message box or modify a file to look corrupted
+    MessageBoxA(NULL, "The application has encountered an unrecoverable disk error.", "IronLock Protection", MB_OK | MB_ICONERROR);
 }
 
 void Response::SystemBSOD() {
-    // Feature 30: NtRaiseHardError trick
-    uint32_t response;
-    Syscalls::DoSyscall(Hashing::HashString("NtRaiseHardError"), 0xC0000001, 0, 0, 0, 6, &response);
+    uint32_t resp;
+    Syscalls::DoSyscall(Hashing::HashString("NtRaiseHardError"), 0xC000021A, 0, 0, 0, 6, &resp);
 }
 
 } // namespace IronLock::Core

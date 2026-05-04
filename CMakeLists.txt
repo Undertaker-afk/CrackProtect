@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(NOT MSVC)
-    message(FATAL_ERROR "This project requires MSVC or Clang-cl on Windows.")
+    message(FATAL_ERROR "This project requires MSVC on Windows.")
 endif()
 
 include_directories(include)
@@ -60,6 +60,11 @@ set(OBFUSCATION_SOURCES
     src/modules/vm/VirtualMachine.cpp
 )
 
+# Assembly
+set(ASM_SOURCES
+    src/asm/DirectSyscall.asm
+)
+
 # Assemble all sources
 set(SDK_SOURCES
     src/IronLock.cpp
@@ -71,11 +76,24 @@ set(SDK_SOURCES
     ${MEMORY_SOURCES}
     ${NETWORK_SOURCES}
     ${OBFUSCATION_SOURCES}
+    ${ASM_SOURCES}
 )
 
 # Library
 add_library(IronLock STATIC ${SDK_SOURCES})
 
+# Tooling
+add_executable(ironlock-cl compiler/main.cpp)
+target_link_libraries(ironlock-cl PRIVATE IronLock)
+
+add_executable(iltranspiler examples/iltranspiler.cpp)
+add_executable(ilprotect-cli examples/ilprotect_cli.cpp)
+add_executable(ilgui WIN32 examples/ilgui.cpp)
+
 # Demo App
 add_executable(IronLockDemo examples/main.cpp)
 target_link_libraries(IronLockDemo IronLock)
+
+# Demo Loader
+add_executable(IronLockLoader examples/loader/loader.cpp)
+target_link_libraries(IronLockLoader PRIVATE IronLock)

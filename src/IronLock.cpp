@@ -1,13 +1,13 @@
 #include "IronLock/ProtectionSDK.h"
-#include "../../src/core/Syscalls.h"
-#include "../../src/core/Audit.h"
-#include "../../src/modules/anti_debug/AntiDebug_User.h"
-#include "../../src/modules/anti_debug/AntiDebug_Kernel.h"
-#include "../../src/modules/anti_vm/VMDetect.h"
-#include "../../src/modules/sandbox/SandboxDetect.h"
-#include "../../src/modules/network/NetworkProtection.h"
-#include "../../src/modules/memory/Integrity.h"
-#include "../../src/modules/tools/ToolDetect.h"
+#include "core/Syscalls.h"
+#include "core/Audit.h"
+#include "modules/anti_debug/AntiDebug_User.h"
+#include "modules/anti_debug/AntiDebug_Kernel.h"
+#include "modules/anti_vm/VMDetect.h"
+#include "modules/sandbox/SandboxDetect.h"
+#include "modules/network/NetworkProtection.h"
+#include "modules/memory/Integrity.h"
+#include "modules/tools/ToolDetect.h"
 
 namespace IronLock {
 
@@ -16,7 +16,6 @@ static TripwireCallback g_Callback = nullptr;
 bool ProtectionInit() {
     bool success = Core::Syscalls::Initialize();
     if (success) {
-        // Feature 17: Anti-Attach Patching on Init
         Modules::Memory::PatchAntiAttach();
         Core::Audit::Log("IronLock SDK Initialized Successfully.");
     }
@@ -66,7 +65,6 @@ bool Integrity::CheckSelfIntegrity() {
 bool IsEnvironmentSafe() {
     bool safe = true;
 
-    // Aggregated checks with Audit logging
     if (AntiDebug::IsDebuggerPresent()) safe = false;
     if (AntiDebug::CheckKernelDebugger()) safe = false;
     if (AntiVM::IsRunningInVM()) safe = false;
@@ -74,7 +72,6 @@ bool IsEnvironmentSafe() {
     if (!Network::IsNetworkSafe()) safe = false;
     if (!Integrity::CheckSelfIntegrity()) safe = false;
 
-    // Feature 5: Tool Detection integration
     if (Modules::Tools::RunAllToolChecks()) {
         Core::Audit::Log("Analysis Tool detected in background");
         safe = false;

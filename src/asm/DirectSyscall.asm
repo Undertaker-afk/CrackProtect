@@ -1,50 +1,36 @@
-; IronLock Advanced x64 Assembly stubs
+; IronLock Final x64 Assembly stubs
 .code
 
 ; NTSTATUS DirectSyscall(uint32_t num, PVOID a1, PVOID a2, PVOID a3, PVOID a4, PVOID a5, PVOID a6)
 DirectSyscall PROC
-    ; --- Advanced Stealth: Return Address Validation ---
-    ; Check if the caller is within our own module
-    ; (Simplified check: ensure RSP points to a valid return address within a certain range)
+    mov eax, ecx
+    mov r10, rdx
+    mov rdx, r8
+    mov r8, r9
+    mov r9, [rsp + 40]
 
-    mov eax, ecx        ; Syscall number to EAX
-    mov r10, rdx        ; 1st arg to R10
-    mov rdx, r8         ; 2nd arg to RDX
-    mov r8, r9          ; 3rd arg to R8
-    mov r9, [rsp + 40]  ; 4th arg to R9
-
-    ; Shadow space and stack arguments
     sub rsp, 28h
     mov rax, [rsp + 48 + 28h]
-    mov [rsp + 20h], rax      ; 5th arg
+    mov [rsp + 20h], rax
     mov rax, [rsp + 56 + 28h]
-    mov [rsp + 28h], rax      ; 6th arg
+    mov [rsp + 28h], rax
 
     mov eax, ecx
-
-    ; --- Advanced Stealth: Stack Spoofing ---
-    ; To prevent backtracing, we could swap RSP temporarily or use a gadget
-
     syscall
-
     add rsp, 28h
     ret
 DirectSyscall ENDP
 
-; Hardware Breakpoint Persistence (Feature 1)
-; void IL_PersistHWBP(uintptr_t addr, int index)
+; Hardware Breakpoint Persistence
+; Sets DR0-DR3 directly (if possible in user-mode via Context manipulation)
 IL_PersistHWBP PROC
-    ; Requires DR0-DR7 access, typically via NtSetContextThread or privileged mode
-    ; For user-mode, we might just check if they are set
+    ; Logic moved to C++ using NtSetContextThread
     ret
 IL_PersistHWBP ENDP
 
-; Syscall Hooking Detection (Feature 6)
-; bool IL_IsSyscallHooked(PVOID funcAddr)
+; Syscall Hooking Detection
 IL_IsSyscallHooked PROC
     mov rax, rcx
-    ; Check for 'syscall' (0F 05) or 'sysenter' (0F 34)
-    ; And look for JMP (E9) or CALL (E8) in the prologue
     movzx edx, byte ptr [rax]
     cmp dl, 0E9h
     jz hooked
@@ -57,14 +43,20 @@ hooked:
     ret
 IL_IsSyscallHooked ENDP
 
-; Anti-Attach Patching (Feature 17)
-; Overwrites a function with 'ret' or 'TerminateProcess' logic
+; Anti-Attach Patching (Inline ret)
 IL_PatchAntiAttach PROC
-    ; This is usually done by the C++ code calling NtProtectVirtualMemory then writing bytes
+    mov rax, rcx
+    mov byte ptr [rax], 0C3h ; ret
     ret
 IL_PatchAntiAttach ENDP
 
-; --- Existing Stubs ---
+CheckTrapFlagInternal PROC
+    pushfq
+    or qword ptr [rsp], 100h
+    popfq
+    nop ; Triggers STATUS_SINGLE_STEP if no debugger
+    ret
+CheckTrapFlagInternal ENDP
 
 CheckVMwareBackdoorInternal PROC
     push rbx
