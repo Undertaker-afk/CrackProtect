@@ -1,0 +1,8 @@
+{
+  "clean-host": {"debugger_detected": false, "vm_detected": false, "sandbox_detected": false, "mitm_detected": false},
+  "debugger-x64dbg": {"debugger_detected": true},
+  "vm-virtualbox": {"vm_detected": true},
+  "vm-vmware": {"vm_detected": true},
+  "sandbox-anyrun": {"sandbox_detected": true},
+  "mitm-fiddler": {"mitm_detected": true}
+}

@@ -1,0 +1,39 @@
+scenarios:
+  - id: clean-host
+    description: Baseline host without analysis tools
+    tags: [baseline]
+    expected:
+      debugger_detected: false
+      vm_detected: false
+      sandbox_detected: false
+      mitm_detected: false
+
+  - id: debugger-x64dbg
+    description: Host with debugger attached or present
+    tags: [debugger]
+    expected:
+      debugger_detected: true
+
+  - id: vm-virtualbox
+    description: VirtualBox guest environment
+    tags: [vm, sandbox]
+    expected:
+      vm_detected: true
+
+  - id: vm-vmware
+    description: VMware guest environment
+    tags: [vm, sandbox]
+    expected:
+      vm_detected: true
+
+  - id: sandbox-anyrun
+    description: Dynamic analysis sandbox
+    tags: [sandbox]
+    expected:
+      sandbox_detected: true
+
+  - id: mitm-fiddler
+    description: HTTP(S) interception via Fiddler/Proxy
+    tags: [network, mitm]
+    expected:
+      mitm_detected: true
