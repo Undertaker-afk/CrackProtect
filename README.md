@@ -1,5 +1,9 @@
 # IronLock Protection SDK
 
+**"Unbreakable by Design. Unseen by Default"**  
+**"Compile. Protect. Deploy"**  
+**"Secure by Default"**
+
 IronLock is a comprehensive, production-grade anti-crack and anti-debugging protection library for Windows x86/x64. It is designed to be modular, stealthy, and resilient against modern analysis tools.
 
 ## 🚀 Key Features
@@ -8,12 +12,31 @@ IronLock is a comprehensive, production-grade anti-crack and anti-debugging prot
 - **Manual API Resolution**: Walks the PEB to find module bases and exports without using standard Win32 imports.
 - **Advanced Anti-X**:
   - User-mode and Kernel-mode debugger detection.
-  - Virtual machine and Sandbox environment detection (VMware, VBox, Hyper-V, etc.).
+  - Virtual machine and Sandbox environment detection (VMware, VBox, Hyper-V, KVM, Xen, Parallels).
   - Analysis tool scanning (x64dbg, IDA Pro, Wireshark, etc.).
+- **Code Virtualization**: 
+  - Full x86/x64 instruction lifter (200+ instructions with ModRM/SIB/REX support)
+  - Control Flow Flattening (VMProtect-style state machine)
+  - Polymorphic opcode remapping per build
+  - Stack-based bytecode VM with encrypted handlers
+- **IR-Level Protection** (LLVM/Clang Plugin):
+  - Compile-time Control Flow Flattening
+  - String encryption with AES-256
+  - Opaque predicate insertion
+  - Automatic virtualization candidate detection
 - **Memory Integrity**:
-  - Triple-redundant section hashing with majority-voting consensus.
-  - PE header erasure and anti-dumping techniques.
-- **Custom Code Virtualization**: Stack-based bytecode VM with an integrated transpiler.
+  - Triple-redundant section hashing with majority-voting consensus
+  - Self-checksumming with auto-healing capabilities
+  - Anti-hooking detection (inline, IAT, EAT, VEH hooks)
+  - PE header protection and erasure
+- **IAT Encryption**: Import Address Table encryption with lazy runtime decryption
+- **HWID Licensing System**: 
+  - Multi-component hardware fingerprinting (CPU, Disk, MAC, BIOS, GPU, Motherboard)
+  - Weighted similarity scoring for tolerance to hardware changes
+  - AES-256 encrypted license files with HMAC signatures
+  - Online/offline activation workflows
+  - Perpetual, subscription, trial, floating, and OEM license types
+- **CI/CD Native Integration**: GitHub Actions, GitLab CI, Jenkins, Docker multi-stage builds
 - **Honeypotting**: 20+ bait functions designed to trap and mislead analysts.
 - **Stealth**: XOR/AES encrypted strings and function name randomization.
 
@@ -23,6 +46,8 @@ IronLock is a comprehensive, production-grade anti-crack and anti-debugging prot
 - [IronLock CLI](./examples/ilprotect_cli.cpp): Command-line interface for binary hardening.
 - [IronLock GUI](./examples/ilgui.cpp): Win32-based interface with feature selection and drag-and-drop.
 - [IronLock Transpiler](./examples/iltranspiler.cpp): Source-to-bytecode virtualization tool.
+- [LLVM/Clang Plugin](./src/modules/llvm_plugin/): Direct compilation pipeline integration.
+- [CI/CD Integration](./src/modules/cicd/): GitHub Actions, GitLab CI, Jenkins, Docker support.
 
 ## 📚 Documentation
 
