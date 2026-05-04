@@ -59,6 +59,7 @@ set(NETWORK_SOURCES
 # Obfuscation & VM
 set(OBFUSCATION_SOURCES
     src/modules/obfuscation/ControlFlow.cpp
+    src/modules/obfuscation/TransformFramework.cpp
     src/modules/vm/VirtualMachine.cpp
     src/modules/vm/lifter/InstructionLifter.cpp
     src/modules/vm/lifter/IRNormalizer.cpp
