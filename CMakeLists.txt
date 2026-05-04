@@ -76,6 +76,11 @@ set(PACKER_SOURCES
     src/modules/packer/Packer.cpp
 )
 
+# Polymorphism
+set(POLYMORPH_SOURCES
+    src/modules/polymorph/Polymorph.cpp
+)
+
 # Assembly
 set(ASM_SOURCES
     src/asm/DirectSyscall.asm
@@ -93,6 +98,7 @@ set(SDK_SOURCES
     ${MEMORY_SOURCES}
     ${NETWORK_SOURCES}
     ${OBFUSCATION_SOURCES}
+    ${POLYMORPH_SOURCES}
     ${PACKER_SOURCES}
     ${ASM_SOURCES}
 )
