@@ -19,18 +19,14 @@ __declspec(allocate(".il_int3")) volatile uint32_t g_TextHash3 = 0xAAAAAAAA;
 bool VerifySectionIntegrity() {
     PVOID base = Resolver::GetModuleBase(0);
     if (!base) return true;
-
     uint32_t expected;
     if (g_TextHash1 == g_TextHash2) expected = g_TextHash1;
     else if (g_TextHash1 == g_TextHash3) expected = g_TextHash1;
     else if (g_TextHash2 == g_TextHash3) expected = g_TextHash2;
     else return false;
-
     if (expected == 0xAAAAAAAA) return true;
-
     PIMAGE_DOS_HEADER dosHeader = (PIMAGE_DOS_HEADER)base;
     PIMAGE_NT_HEADERS ntHeaders = (PIMAGE_NT_HEADERS)((BYTE*)base + dosHeader->e_lfanew);
-
     PIMAGE_SECTION_HEADER section = IMAGE_FIRST_SECTION(ntHeaders);
     for (int i = 0; i < ntHeaders->FileHeader.NumberOfSections; i++) {
         if (Hashing::HashString((const char*)section[i].Name) == Hashing::HashString(".text")) {
@@ -48,17 +44,14 @@ bool DetectHooks() {
     return pNtQueryInfo && (*pNtQueryInfo == 0xE9 || *pNtQueryInfo == 0xCC);
 }
 
-bool DetectIATRedirection() {
-    return false;
-}
-
 void ErasePEHeader() {
     PVOID base = Resolver::GetModuleBase(0);
     if (!base) return;
     DWORD old; SIZE_T size = 4096; PVOID addr = base;
-    Syscalls::DoSyscall(Hashing::HashString("NtProtectVirtualMemory"), (HANDLE)-1, &addr, &size, PAGE_READWRITE, &old);
-    memset(base, 0, 4096);
-    Syscalls::DoSyscall(Hashing::HashString("NtProtectVirtualMemory"), (HANDLE)-1, &addr, &size, old, &old);
+    if (Syscalls::DoSyscall(Hashing::HashString("NtProtectVirtualMemory"), (HANDLE)-1, &addr, &size, PAGE_READWRITE, &old) == 0) {
+        memset(base, 0, 4096);
+        Syscalls::DoSyscall(Hashing::HashString("NtProtectVirtualMemory"), (HANDLE)-1, &addr, &size, old, &old);
+    }
 }
 
 void MangleSizeOfImage() {
@@ -67,9 +60,10 @@ void MangleSizeOfImage() {
     PIMAGE_DOS_HEADER dos = (PIMAGE_DOS_HEADER)base;
     PIMAGE_NT_HEADERS nt = (PIMAGE_NT_HEADERS)((BYTE*)base + dos->e_lfanew);
     DWORD old; SIZE_T size = 4; PVOID addr = &nt->OptionalHeader.SizeOfImage;
-    Syscalls::DoSyscall(Hashing::HashString("NtProtectVirtualMemory"), (HANDLE)-1, &addr, &size, PAGE_READWRITE, &old);
-    nt->OptionalHeader.SizeOfImage += 0x1000;
-    Syscalls::DoSyscall(Hashing::HashString("NtProtectVirtualMemory"), (HANDLE)-1, &addr, &size, old, &old);
+    if (Syscalls::DoSyscall(Hashing::HashString("NtProtectVirtualMemory"), (HANDLE)-1, &addr, &size, PAGE_READWRITE, &old) == 0) {
+        nt->OptionalHeader.SizeOfImage += 0x1000;
+        Syscalls::DoSyscall(Hashing::HashString("NtProtectVirtualMemory"), (HANDLE)-1, &addr, &size, old, &old);
+    }
 }
 
 bool DetectProcessHollowing() { return false; }

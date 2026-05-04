@@ -12,6 +12,7 @@
 - [x] **Anti-Attach Patching (DbgUiRemoteBreakin)**: DONE
 - [x] **Direct Syscalls (Hell's/Halo's Gate)**: DONE
 - [x] **Process Hollowing & Injected Thread Detection**: DONE
+- [x] **GitHub CI/CD Automation (Automated .lib Releases)**: DONE
 
 ## 🚀 Roadmap (Next 30+ Features)
 1.  [ ] **Kernel-mode protection driver**: Move core checks to Ring 0.

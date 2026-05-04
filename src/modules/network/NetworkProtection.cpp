@@ -1,19 +1,16 @@
 #include "NetworkProtection.h"
-#include "../../core/Utils.h"
 #include "../../core/Resolver.h"
-#include "../../core/Syscalls.h"
 #include "../../core/Hashing.h"
 #include <vector>
 #include <string>
 #include <iphlpapi.h>
+#include <wincrypt.h>
 
 namespace IronLock::Modules::Network {
 
 using namespace IronLock::Core;
 
 bool IsSystemProxyHijacked() {
-    // Manually resolve registry functions if possible, or use syscalls for direct registry access
-    // For now, we use the Resolver to get the functions
     typedef LSTATUS(WINAPI* tRegOpenKeyExW)(HKEY, LPCWSTR, DWORD, REGSAM, PHKEY);
     typedef LSTATUS(WINAPI* tRegQueryValueExW)(HKEY, LPCWSTR, LPDWORD, LPDWORD, LPBYTE, LPDWORD);
     typedef LSTATUS(WINAPI* tRegCloseKey)(HKEY);
