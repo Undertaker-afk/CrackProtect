@@ -23,19 +23,16 @@ bool CheckCPUID() {
     memcpy(vendor + 4, &cpuInfo[2], 4);
     memcpy(vendor + 8, &cpuInfo[3], 4);
     vendor[12] = '\0';
-
     std::string s(vendor);
-    if (s == "VMwareVMware" || s == "VBoxVBoxVBox" || s == "KVMKVMKVM" || s == "Microsoft Hv" || s == "XenVMMXenVMM")
-        return true;
+    return (s == "VMwareVMware" || s == "VBoxVBoxVBox" || s == "KVMKVMKVM" || s == "Microsoft Hv" || s == "XenVMMXenVMM");
+}
+
+bool CheckSMBIOS() {
     return false;
 }
 
-bool CheckVMwareBackdoor() {
-    __try {
-        return CheckVMwareBackdoorInternal();
-    } __except(1) {
-        return false;
-    }
+bool CheckRegistryKeys() {
+    return false;
 }
 
 bool CheckDrivers() {
@@ -47,6 +44,22 @@ bool CheckDrivers() {
         if (GetFileAttributesW((L"C:\\Windows\\System32\\drivers\\" + d).c_str()) != INVALID_FILE_ATTRIBUTES)
             return true;
     }
+    return false;
+}
+
+bool CheckVMwareBackdoor() {
+    __try {
+        return CheckVMwareBackdoorInternal();
+    } __except(1) {
+        return false;
+    }
+}
+
+bool CheckVBoxArtifacts() {
+    return false;
+}
+
+bool CheckHyperV() {
     return false;
 }
 

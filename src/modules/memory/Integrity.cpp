@@ -8,14 +8,27 @@ namespace IronLock::Modules::Memory {
 
 using namespace IronLock::Core;
 
-// Feature: Auto-Integrity
-// This value is patched by the IronLock Protector CLI after compilation.
-#pragma section(".il_data", read, write)
-__declspec(allocate(".il_data")) volatile uint32_t g_ExpectedTextHash = 0xAAAAAAAA;
+// Triple Redundant Integrity Storage
+#pragma section(".il_int1", read, write)
+#pragma section(".il_int2", read, write)
+#pragma section(".il_int3", read, write)
+
+__declspec(allocate(".il_int1")) volatile uint32_t g_TextHash1 = 0xAAAAAAAA;
+__declspec(allocate(".il_int2")) volatile uint32_t g_TextHash2 = 0xAAAAAAAA;
+__declspec(allocate(".il_int3")) volatile uint32_t g_TextHash3 = 0xAAAAAAAA;
 
 bool VerifySectionIntegrity() {
     PVOID base = Resolver::GetModuleBase(0);
     if (!base) return true;
+
+    // Consensus Check (Voting System)
+    uint32_t expected;
+    if (g_TextHash1 == g_TextHash2) expected = g_TextHash1;
+    else if (g_TextHash1 == g_TextHash3) expected = g_TextHash1;
+    else if (g_TextHash2 == g_TextHash3) expected = g_TextHash2;
+    else return false; // Total corruption
+
+    if (expected == 0xAAAAAAAA) return true; // Unprotected dev build
 
     PIMAGE_DOS_HEADER dosHeader = (PIMAGE_DOS_HEADER)base;
     PIMAGE_NT_HEADERS ntHeaders = (PIMAGE_NT_HEADERS)((BYTE*)base + dosHeader->e_lfanew);
@@ -24,11 +37,7 @@ bool VerifySectionIntegrity() {
     for (int i = 0; i < ntHeaders->FileHeader.NumberOfSections; i++) {
         if (Hashing::HashString((const char*)section[i].Name) == Hashing::HashString(".text")) {
             uint32_t currentHash = Hashing::HashString(std::string_view((char*)base + section[i].VirtualAddress, section[i].Misc.VirtualSize));
-
-            // If the hash is still the placeholder, we are in an unprotected build (debug/dev)
-            if (g_ExpectedTextHash == 0xAAAAAAAA) return true;
-
-            return currentHash == g_ExpectedTextHash;
+            return currentHash == expected;
         }
     }
     return true;
@@ -37,40 +46,18 @@ bool VerifySectionIntegrity() {
 bool DetectHooks() {
     PVOID ntdll = Resolver::GetModuleBase(Hashing::HashStringW(L"ntdll.dll"));
     if (!ntdll) return false;
-
     BYTE* pNtQueryInfo = (BYTE*)Resolver::GetExport(ntdll, Hashing::HashString("NtQueryInformationProcess"));
-    if (pNtQueryInfo && (*pNtQueryInfo == 0xE9 || *pNtQueryInfo == 0xCC)) return true;
-
-    return false;
-}
-
-bool DetectProcessHollowing() {
-    // Advanced: compare memory image size vs PE header size
-    PVOID base = Resolver::GetModuleBase(0);
-    PIMAGE_DOS_HEADER dos = (PIMAGE_DOS_HEADER)base;
-    PIMAGE_NT_HEADERS nt = (PIMAGE_NT_HEADERS)((BYTE*)base + dos->e_lfanew);
-
-    // Simple heuristic: check if SizeOfImage in memory matches header
-    // Analysts often hollow out but forget to adjust certain PE fields
-    return false;
-}
-
-bool DetectInjectedThreads() {
-    // Thread enumeration logic
-    return false;
+    return pNtQueryInfo && (*pNtQueryInfo == 0xE9 || *pNtQueryInfo == 0xCC);
 }
 
 void PatchAntiAttach() {
     PVOID ntdll = Resolver::GetModuleBase(Hashing::HashStringW(L"ntdll.dll"));
     if (!ntdll) return;
-
     PVOID pBreakin = Resolver::GetExport(ntdll, Hashing::HashString("DbgUiRemoteBreakin"));
     if (pBreakin) {
-        DWORD oldProtect;
-        SIZE_T size = 1;
-        PVOID addr = pBreakin;
+        DWORD oldProtect; SIZE_T size = 1; PVOID addr = pBreakin;
         Syscalls::DoSyscall(Hashing::HashString("NtProtectVirtualMemory"), (HANDLE)-1, &addr, &size, PAGE_READWRITE, &oldProtect);
-        *(BYTE*)pBreakin = 0xC3; // ret
+        *(BYTE*)pBreakin = 0xC3;
         Syscalls::DoSyscall(Hashing::HashString("NtProtectVirtualMemory"), (HANDLE)-1, &addr, &size, oldProtect, &oldProtect);
     }
 }
