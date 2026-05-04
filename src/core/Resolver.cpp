@@ -14,12 +14,22 @@ PVOID Resolver::GetModuleBase(uint32_t moduleHash) {
     PPEB peb = (PPEB)__readfsdword(0x30);
 #endif
 
-    if (moduleHash == 0) return peb->ImageBaseAddress;
+    const auto pebBase = reinterpret_cast<const BYTE*>(peb);
+#ifdef _WIN64
+    auto imageBase = *reinterpret_cast<PVOID* const>(const_cast<BYTE*>(pebBase) + 0x10);
+    auto ldr = *reinterpret_cast<PPEB_LDR_DATA* const>(const_cast<BYTE*>(pebBase) + 0x18);
+#else
+    auto imageBase = *reinterpret_cast<PVOID* const>(const_cast<BYTE*>(pebBase) + 0x08);
+    auto ldr = *reinterpret_cast<PPEB_LDR_DATA* const>(const_cast<BYTE*>(pebBase) + 0x0C);
+#endif
+
+    if (moduleHash == 0) return imageBase;
 
     // Stealth Caching
     if (g_ModuleCache.count(moduleHash)) return g_ModuleCache[moduleHash];
 
-    PLIST_ENTRY head = &peb->Ldr->InMemoryOrderModuleList;
+    if (!ldr) return nullptr;
+    PLIST_ENTRY head = &ldr->InMemoryOrderModuleList;
     PLIST_ENTRY current = head->Flink;
 
     while (current != head) {
