@@ -62,6 +62,11 @@ set(OBFUSCATION_SOURCES
     src/modules/vm/VirtualMachine.cpp
 )
 
+# Polymorphism
+set(POLYMORPH_SOURCES
+    src/modules/polymorph/Polymorph.cpp
+)
+
 # Assembly
 set(ASM_SOURCES
     src/asm/DirectSyscall.asm
@@ -78,6 +83,7 @@ set(SDK_SOURCES
     ${MEMORY_SOURCES}
     ${NETWORK_SOURCES}
     ${OBFUSCATION_SOURCES}
+    ${POLYMORPH_SOURCES}
     ${ASM_SOURCES}
 )
 
