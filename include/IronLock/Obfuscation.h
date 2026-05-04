@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 // IronLock Function Name Randomization Macros
 // In a protected build, these macros are redefined by the Compiler Engine
 // to map to random strings.
@@ -15,3 +17,13 @@
 #define IL_CheckVM         IL_CheckVM_Internal
 #define IL_IsSafe          IL_IsSafe_Internal
 #endif
+
+namespace IronLock {
+
+enum class ObfuscationProfile : uint8_t {
+    BALANCED = 0,
+    MAX,
+    COMPAT
+};
+
+} // namespace IronLock
