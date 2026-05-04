@@ -6,6 +6,8 @@
 #include <winternl.h>
 #include <intrin.h>
 #include <tlhelp32.h>
+#include <algorithm>
+#include <vector>
 
 extern "C" void CheckTrapFlagInternal();
 
@@ -59,12 +61,12 @@ bool CheckInvalidHandle() {
 bool CheckHeapFlags() {
 #ifdef _WIN64
     PPEB peb = (PPEB)__readgsqword(0x60);
-    PVOID heap = peb->ProcessHeap;
+    PVOID heap = *reinterpret_cast<PVOID*>(reinterpret_cast<BYTE*>(peb) + 0x30);
     DWORD flags = *(DWORD*)((BYTE*)heap + 0x70);
     DWORD forceFlags = *(DWORD*)((BYTE*)heap + 0x74);
 #else
     PPEB peb = (PPEB)__readfsdword(0x30);
-    PVOID heap = peb->ProcessHeap;
+    PVOID heap = *reinterpret_cast<PVOID*>(reinterpret_cast<BYTE*>(peb) + 0x18);
     DWORD flags = *(DWORD*)((BYTE*)heap + 0x10);
     DWORD forceFlags = *(DWORD*)((BYTE*)heap + 0x14);
 #endif

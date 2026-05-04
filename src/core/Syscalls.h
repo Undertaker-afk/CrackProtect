@@ -1,7 +1,12 @@
 #pragma once
 #include <windows.h>
 #include <winternl.h>
+#include <ntstatus.h>
 #include "Hashing.h"
+
+#ifndef STATUS_NOT_FOUND
+#define STATUS_NOT_FOUND ((NTSTATUS)0xC0000225L)
+#endif
 
 namespace IronLock::Core {
 
