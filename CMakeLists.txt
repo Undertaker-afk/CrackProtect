@@ -62,6 +62,10 @@ set(OBFUSCATION_SOURCES
     src/modules/vm/VirtualMachine.cpp
 )
 
+set(PACKER_SOURCES
+    src/modules/packer/Packer.cpp
+)
+
 # Assembly
 set(ASM_SOURCES
     src/asm/DirectSyscall.asm
@@ -78,6 +82,7 @@ set(SDK_SOURCES
     ${MEMORY_SOURCES}
     ${NETWORK_SOURCES}
     ${OBFUSCATION_SOURCES}
+    ${PACKER_SOURCES}
     ${ASM_SOURCES}
 )
 
