@@ -60,6 +60,10 @@ set(NETWORK_SOURCES
 set(OBFUSCATION_SOURCES
     src/modules/obfuscation/ControlFlow.cpp
     src/modules/vm/VirtualMachine.cpp
+    src/modules/vm/lifter/InstructionLifter.cpp
+    src/modules/vm/lifter/IRNormalizer.cpp
+    src/modules/vm/lifter/VirtualizationPass.cpp
+    src/modules/vm/lifter/MixedExecution.cpp
 )
 
 set(PACKER_SOURCES
@@ -104,3 +108,7 @@ target_link_libraries(IronLockDemo IronLock)
 # Demo Loader
 add_executable(IronLockLoader examples/loader/loader.cpp)
 target_link_libraries(IronLockLoader PRIVATE IronLock)
+
+
+add_executable(vm-lifter-harness tests/vm/lifter_harness.cpp)
+target_link_libraries(vm-lifter-harness PRIVATE IronLock)
