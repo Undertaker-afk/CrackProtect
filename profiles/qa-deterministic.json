@@ -1,0 +1,8 @@
+{
+  "schema_version": 2,
+  "enabled_modules": ["anti_debug", "integrity", "sandbox"],
+  "aggressiveness": 20,
+  "response_policy": "balanced",
+  "virtualization_scope": "sensitive",
+  "mode": "deterministic"
+}

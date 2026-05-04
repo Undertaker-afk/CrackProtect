@@ -21,6 +21,7 @@ set(CORE_SOURCES
     src/core/Audit.cpp
     src/core/Randomizer.cpp
     src/core/PolicyEngine.cpp
+    src/core/ProfileConfig.cpp
 )
 
 # Anti-Debug

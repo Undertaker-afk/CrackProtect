@@ -1,0 +1,6 @@
+schema_version: 2
+enabled_modules: [anti_debug, anti_vm, integrity, sandbox, network, analysis_tools]
+aggressiveness: 60
+response_policy: adaptive
+virtualization_scope: broad
+mode: hardened

@@ -3,6 +3,7 @@
 #include "core/Audit.h"
 #include "core/PolicyEngine.h"
 #include "core/Response.h"
+#include "core/ProfileConfig.h"
 #include "modules/anti_debug/AntiDebug_User.h"
 #include "modules/anti_debug/AntiDebug_Kernel.h"
 #include "modules/anti_vm/VMDetect.h"
@@ -14,25 +15,34 @@
 #include <vector>
 #include <ctime>
 #include <string>
+#include <cstdlib>
 
 namespace IronLock {
 
 static TripwireCallback g_Callback = nullptr;
 
+static Core::ProfileConfig g_RuntimeProfile = Core::ProfileConfig::SafeDefaults();
+
 bool ProtectionInit() {
     bool success = Core::Syscalls::Initialize();
     if (success) {
+    Core::ProfileConfig profile = Core::ProfileConfig::SafeDefaults();
+    if (const char* profilePath = std::getenv("IRONLOCK_PROFILE")) {
+        if (auto loaded = Core::ProfileLoader::LoadFromPath(profilePath)) {
+            profile = *loaded;
+            Core::Audit::Log(std::string("Profile loaded: ") + profilePath);
+        } else {
+            Core::Audit::Log("Profile load failed; using safe defaults");
+        }
+    }
 
+    g_RuntimeProfile = profile;
     Modules::VM::VirtualMachine::RuntimeProfile vmProfile{};
     for (size_t i = 0; i < vmProfile.decodeTable.size(); ++i) vmProfile.decodeTable[i] = static_cast<uint8_t>(i);
-    vmProfile.keySalt = {0xA5311E4Du, 0x9BC1022Fu, 0x74CC55A1u, 0x11EE0D99u};
+    vmProfile.keySalt = profile.fixedSeeds;
     success = Modules::VM::VirtualMachine::InitializeRuntime(vmProfile) && success;
-    Core::PolicyEngine::Initialize("balanced");
-#ifdef IRONLOCK_QA_MODE
-    Core::Response::ConfigureDeterministicMode(true);
-#else
-    Core::Response::ConfigureDeterministicMode(false);
-#endif
+    Core::PolicyEngine::Initialize(profile.responsePolicy);
+    Core::Response::ConfigureDeterministicMode(profile.mode == Core::ProfileMode::DETERMINISTIC);
     Modules::Memory::PatchAntiAttach();
     Core::Audit::Log("IronLock SDK Initialized Successfully.");
     }
@@ -82,25 +92,25 @@ bool Integrity::CheckSelfIntegrity() {
 bool IsEnvironmentSafe() {
     std::vector<Core::Evidence> evidence;
 
-    const bool userDbg = AntiDebug::IsDebuggerPresent();
+    const bool userDbg = Core::ProfileLoader::IsModuleEnabled(g_RuntimeProfile, "anti_debug") ? AntiDebug::IsDebuggerPresent() : false;
     evidence.push_back({"anti_debug.user", userDbg, 0.90, 0.95, userDbg ? "User-mode debugger indicators present" : "No user-mode debugger evidence"});
 
-    const bool kernelDbg = AntiDebug::CheckKernelDebugger();
+    const bool kernelDbg = Core::ProfileLoader::IsModuleEnabled(g_RuntimeProfile, "anti_debug") ? AntiDebug::CheckKernelDebugger() : false;
     evidence.push_back({"anti_debug.kernel", kernelDbg, 1.00, 0.90, kernelDbg ? "Kernel debugger state detected" : "Kernel debugger checks are clean"});
 
-    const bool vmDetected = AntiVM::IsRunningInVM();
+    const bool vmDetected = Core::ProfileLoader::IsModuleEnabled(g_RuntimeProfile, "anti_vm") ? AntiVM::IsRunningInVM() : false;
     evidence.push_back({"anti_vm", vmDetected, 0.65, 0.75, vmDetected ? "Virtualized environment fingerprints detected" : "No virtualization fingerprints"});
 
-    const bool sandboxDetected = Sandbox::IsRunningInSandbox();
+    const bool sandboxDetected = Core::ProfileLoader::IsModuleEnabled(g_RuntimeProfile, "sandbox") ? Sandbox::IsRunningInSandbox() : false;
     evidence.push_back({"sandbox", sandboxDetected, 0.75, 0.80, sandboxDetected ? "Sandbox artifacts detected" : "No sandbox artifacts"});
 
-    const bool networkUnsafe = !Network::IsNetworkSafe();
+    const bool networkUnsafe = Core::ProfileLoader::IsModuleEnabled(g_RuntimeProfile, "network") ? !Network::IsNetworkSafe() : false;
     evidence.push_back({"network", networkUnsafe, 0.50, 0.70, networkUnsafe ? "Network interception/VPN evidence detected" : "Network posture appears safe"});
 
-    const bool integrityUnsafe = !Integrity::CheckSelfIntegrity();
+    const bool integrityUnsafe = Core::ProfileLoader::IsModuleEnabled(g_RuntimeProfile, "integrity") ? !Integrity::CheckSelfIntegrity() : false;
     evidence.push_back({"integrity", integrityUnsafe, 0.95, 0.95, integrityUnsafe ? "Integrity violation or API hooks detected" : "Code integrity checks passed"});
 
-    const bool toolsDetected = Modules::Tools::RunAllToolChecks();
+    const bool toolsDetected = Core::ProfileLoader::IsModuleEnabled(g_RuntimeProfile, "analysis_tools") ? Modules::Tools::RunAllToolChecks() : false;
     if (toolsDetected) {
         Core::Audit::Log("Analysis Tool detected in background");
     }
