@@ -1,0 +1,27 @@
+name: Build IronLock Demo Loader
+
+on:
+  push:
+    paths:
+      - 'examples/loader/**'
+  workflow_dispatch:
+
+jobs:
+  build-loader:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Configure CMake
+      run: cmake -B build -A x64
+
+    - name: Build SDK and Loader
+      run: cmake --build build --config Release --target IronLockLoader
+
+    - name: Upload Loader Binary
+      uses: actions/upload-artifact@v3
+      with:
+        name: IronLock-Loader
+        path: build/examples/loader/Release/IronLockLoader.exe

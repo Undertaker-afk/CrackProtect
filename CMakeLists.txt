@@ -60,6 +60,11 @@ set(OBFUSCATION_SOURCES
     src/modules/vm/VirtualMachine.cpp
 )
 
+# Assembly
+set(ASM_SOURCES
+    src/asm/DirectSyscall.asm
+)
+
 # Assemble all sources
 set(SDK_SOURCES
     src/IronLock.cpp
@@ -71,6 +76,7 @@ set(SDK_SOURCES
     ${MEMORY_SOURCES}
     ${NETWORK_SOURCES}
     ${OBFUSCATION_SOURCES}
+    ${ASM_SOURCES}
 )
 
 # Library
@@ -87,3 +93,7 @@ add_executable(ilgui WIN32 examples/ilgui.cpp)
 # Demo App
 add_executable(IronLockDemo examples/main.cpp)
 target_link_libraries(IronLockDemo IronLock)
+
+# Demo Loader
+add_executable(IronLockLoader examples/loader/loader.cpp)
+target_link_libraries(IronLockLoader PRIVATE IronLock)

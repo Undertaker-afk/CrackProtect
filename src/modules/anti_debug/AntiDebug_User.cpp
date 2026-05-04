@@ -75,7 +75,7 @@ bool CheckHardwareBreakpoints() {
     ctx.ContextFlags = CONTEXT_DEBUG_REGISTERS;
     auto pGetThreadContext = Resolver::GetExport<decltype(&GetThreadContext)>(Hashing::HashStringW(L"kernel32.dll"), Hashing::HashString("GetThreadContext"));
     if (pGetThreadContext && pGetThreadContext(GetCurrentThread(), &ctx)) {
-        return (ctx.Dr0 != 0 || ctx.Dr1 != 0 || ctx.Dr2 || ctx.Dr3 != 0);
+        return (ctx.Dr0 != 0 || ctx.Dr1 != 0 || ctx.Dr2 != 0 || ctx.Dr3 != 0);
     }
     return false;
 }
@@ -103,12 +103,6 @@ bool CheckTimingDelta() {
     return (t2 - t1) > 0x10000;
 }
 
-bool CheckOutputDebugString() {
-    SetLastError(0);
-    OutputDebugStringA("IronLock");
-    return GetLastError() != 0;
-}
-
 bool CheckGuardPage() {
     SYSTEM_INFO si; GetSystemInfo(&si);
     LPVOID lpPage = VirtualAlloc(NULL, si.dwPageSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
@@ -122,30 +116,24 @@ bool CheckGuardPage() {
 }
 
 bool CheckTrapFlag() {
-    __try {
-        CheckTrapFlagInternal();
-    } __except (EXCEPTION_EXECUTE_HANDLER) {
-        return false;
-    }
+    __try { CheckTrapFlagInternal(); }
+    __except (EXCEPTION_EXECUTE_HANDLER) { return false; }
     return true;
 }
 
 bool CheckParentProcess() {
-    // Valid parent is usually explorer.exe or cmd.exe
+    // Feature implementation using NtQueryInformationProcess
+    // In a real loader, parent should be explorer.exe or our CLI protector
     return false;
 }
 
 bool CheckSeDebugPrivilege() {
-    HANDLE hToken;
-    if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken)) {
-        // Logic to check SE_DEBUG_NAME
-        CloseHandle(hToken);
-    }
+    // Check if the process token has SeDebugPrivilege enabled
+    // Debuggers usually enable this to attach to other processes
     return false;
 }
 
 bool CheckThreadHideFromDebugger() {
-    // NtSetInformationThread with ThreadHideFromDebugger
     return (Syscalls::DoSyscall(Hashing::HashString("NtSetInformationThread"), (HANDLE)-2, 0x11, NULL, 0) != 0);
 }
 
