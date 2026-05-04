@@ -28,10 +28,24 @@ bool CheckCPUID() {
 }
 
 bool CheckSMBIOS() {
+    // Check for "VirtualBox" or "VMware" in System Information
+    // (Actual logic would parse Raw SMBIOS tables via GetSystemFirmwareTable)
     return false;
 }
 
 bool CheckRegistryKeys() {
+    HKEY hKey;
+    const wchar_t* keys[] = {
+        L"HARDWARE\\Description\\System\\SystemBios\\VideoBiosVersion",
+        L"SOFTWARE\\VMware, Inc.\\VMware Tools",
+        L"SOFTWARE\\Oracle\\VirtualBox Guest Additions"
+    };
+    for (const auto& k : keys) {
+        if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, k, 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            RegCloseKey(hKey);
+            return true;
+        }
+    }
     return false;
 }
 
@@ -55,16 +69,8 @@ bool CheckVMwareBackdoor() {
     }
 }
 
-bool CheckVBoxArtifacts() {
-    return false;
-}
-
-bool CheckHyperV() {
-    return false;
-}
-
 bool RunAllVMChecks() {
-    return CheckHypervisorBit() || CheckCPUID() || CheckDrivers() || CheckVMwareBackdoor();
+    return CheckHypervisorBit() || CheckCPUID() || CheckDrivers() || CheckVMwareBackdoor() || CheckRegistryKeys();
 }
 
 } // namespace IronLock::Modules::AntiVM
