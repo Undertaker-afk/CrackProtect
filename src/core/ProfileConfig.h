@@ -22,6 +22,7 @@ struct ProfileConfig {
     std::string virtualizationScope{"sensitive"};
     ProfileMode mode{ProfileMode::DEFAULT};
     std::array<uint64_t, 4> fixedSeeds{0xA5311E4Du, 0x9BC1022Fu, 0x74CC55A1u, 0x11EE0D99u};
+    bool telemetryMode{false};
 
     static ProfileConfig SafeDefaults();
 };
