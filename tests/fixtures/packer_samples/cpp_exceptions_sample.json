@@ -1,0 +1,5 @@
+{
+  "name": "cpp_exceptions_sample",
+  "features": ["seh", "cpp_eh_tables"],
+  "expected": {"packs": true, "runtime_stub": "unwind_safe"}
+}

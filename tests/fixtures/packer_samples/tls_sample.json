@@ -1,0 +1,5 @@
+{
+  "name": "tls_callbacks_sample",
+  "features": ["tls", "callback_init"],
+  "expected": {"packs": true, "runtime_stub": "tls_preserved"}
+}

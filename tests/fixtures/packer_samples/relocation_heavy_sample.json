@@ -1,0 +1,5 @@
+{
+  "name": "relocation_heavy_sample",
+  "features": ["high_reloc_density", "aslr_required"],
+  "expected": {"packs": true, "runtime_stub": "relocations_applied"}
+}

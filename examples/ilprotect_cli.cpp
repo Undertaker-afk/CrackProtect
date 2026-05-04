@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <windows.h>
+#include "modules/packer/Packer.h"
 
 void ProtectEXE(const std::string& path, const std::string& profilePath, const std::string& reportPath) {
     std::cout << "[*] IronLock: Opening " << path << " for protection..." << std::endl;
@@ -24,9 +25,24 @@ void ProtectEXE(const std::string& path, const std::string& profilePath, const s
     PIMAGE_NT_HEADERS ntHeaders = (PIMAGE_NT_HEADERS)(buffer.data() + dosHeader->e_lfanew);
     std::cout << "[*] Found " << ntHeaders->FileHeader.NumberOfSections << " sections." << std::endl;
 
+    ironlock::packer::Packer packer;
+    if (!packer.ParseImage(std::vector<std::uint8_t>(buffer.begin(), buffer.end()))) {
+        std::cerr << "[-] Error: Failed to parse image for packing." << std::endl;
+        return;
+    }
+
+    packer.AddProtectionPolicy(".text", true);
+    packer.AddProtectionPolicy(".rdata", true);
+    packer.AddExclusionRange(ntHeaders->OptionalHeader.AddressOfEntryPoint, 32);
+    if (!packer.BuildPackedImage()) {
+        std::cerr << "[-] Error: Packing stage failed." << std::endl;
+        return;
+    }
+
     std::string outPath = path + ".protected.exe";
     std::ofstream outFile(outPath, std::ios::binary);
-    outFile.write(buffer.data(), buffer.size());
+    const auto& packed = packer.Result().image;
+    outFile.write(reinterpret_cast<const char*>(packed.data()), static_cast<std::streamsize>(packed.size()));
     outFile.close();
 
     std::ofstream report(reportPath);
@@ -34,7 +50,8 @@ void ProtectEXE(const std::string& path, const std::string& profilePath, const s
     report << "  \"target\": \"" << path << "\",\n";
     report << "  \"output\": \"" << outPath << "\",\n";
     report << "  \"profile\": \"" << profilePath << "\",\n";
-    report << "  \"status\": \"protected\"\n";
+    report << "  \"status\": \"protected\",\n";
+    report << "  \"manifest_entries\": " << packer.Result().manifest.size() << "\n";
     report << "}\n";
 
     std::cout << "[+] Protected EXE saved to: " << outPath << std::endl;
