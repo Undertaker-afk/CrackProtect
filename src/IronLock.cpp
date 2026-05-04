@@ -2,6 +2,7 @@
 #include "core/Syscalls.h"
 #include "core/Audit.h"
 #include "core/PolicyEngine.h"
+#include "core/Response.h"
 #include "modules/anti_debug/AntiDebug_User.h"
 #include "modules/anti_debug/AntiDebug_Kernel.h"
 #include "modules/anti_vm/VMDetect.h"
@@ -27,6 +28,11 @@ bool ProtectionInit() {
     vmProfile.keySalt = {0xA5311E4Du, 0x9BC1022Fu, 0x74CC55A1u, 0x11EE0D99u};
     success = Modules::VM::VirtualMachine::InitializeRuntime(vmProfile) && success;
     Core::PolicyEngine::Initialize("balanced");
+#ifdef IRONLOCK_QA_MODE
+    Core::Response::ConfigureDeterministicMode(true);
+#else
+    Core::Response::ConfigureDeterministicMode(false);
+#endif
     Modules::Memory::PatchAntiAttach();
     Core::Audit::Log("IronLock SDK Initialized Successfully.");
     }
@@ -104,6 +110,7 @@ bool IsEnvironmentSafe() {
     ctx.highValueTarget = integrityUnsafe || kernelDbg;
     ctx.userFacingCriticalPath = !toolsDetected;
 
+    Core::Response::TickUsage();
     const Core::PolicyDecision decision = Core::PolicyEngine::Evaluate(evidence, ctx);
 
     Core::Audit::LogEvent({
@@ -116,8 +123,12 @@ bool IsEnvironmentSafe() {
     });
 
     const bool safe = decision.tier == Core::ResponseTier::NONE || decision.tier == Core::ResponseTier::MONITOR;
-    if (!safe && g_Callback) {
-        g_Callback(static_cast<int>(decision.tier));
+    if (!safe) {
+        const Core::ResponseDecision responseDecision = Core::Response::SelectForThreat("environment", decision.mappedThreat);
+        Core::Response::Trigger(responseDecision);
+        if (g_Callback) {
+            g_Callback(static_cast<int>(decision.tier));
+        }
     }
 
     return safe;

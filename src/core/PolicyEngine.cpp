@@ -1,6 +1,7 @@
 #include "PolicyEngine.h"
 
 #include <algorithm>
+#include <unordered_map>
 
 namespace IronLock::Core {
 
@@ -24,10 +25,25 @@ Policy PolicyEngine::LoadPolicy(const std::string& policyName) {
     return Policy{"balanced", 0.35, 0.70, 0.55, 0.40};
 }
 
+ThreatLevel PolicyEngine::MapThreat(const std::string& check, ResponseTier tier) {
+    static const std::unordered_map<std::string, ThreatLevel> hostileMap = {
+        {"integrity", ThreatLevel::HARD_TERMINATE},
+        {"anti_debug.kernel", ThreatLevel::HARD_TERMINATE},
+        {"analysis_tools", ThreatLevel::MISDIRECT},
+        {"network", ThreatLevel::DELAYED_CRASH}
+    };
+
+    if (tier == ResponseTier::NONE || tier == ResponseTier::MONITOR) return ThreatLevel::SILENT;
+    auto it = hostileMap.find(check);
+    if (it != hostileMap.end()) return it->second;
+    return tier == ResponseTier::HOSTILE ? ThreatLevel::HARD_TERMINATE : ThreatLevel::MISDIRECT;
+}
+
 PolicyDecision PolicyEngine::Evaluate(const std::vector<Evidence>& evidence, const EvaluationContext& context) {
     double weightedRisk = 0.0;
     double weightedConfidence = 0.0;
     double weightSum = 0.0;
+    const Evidence* topThreat = nullptr;
 
     for (const auto& item : evidence) {
         const double evidenceWeight = std::clamp(item.confidence, 0.0, 1.0);
@@ -35,9 +51,10 @@ PolicyDecision PolicyEngine::Evaluate(const std::vector<Evidence>& evidence, con
         weightedRisk += signedScore * evidenceWeight;
         weightedConfidence += item.confidence;
         weightSum += evidenceWeight;
+        if (item.suspicious && (!topThreat || item.score > topThreat->score)) topThreat = &item;
     }
 
-    const double riskScore = (weightSum > 0.0) ? (weightedRisk / weightSum) : 0.0;
+    const double riskScore = (weightSum > 0.0) ? (weightedRisk / weightSum) : 1.0; // fail-closed default
     const double confidence = evidence.empty() ? 0.0 : (weightedConfidence / static_cast<double>(evidence.size()));
 
     bool accelerated = false;
@@ -62,7 +79,9 @@ PolicyDecision PolicyEngine::Evaluate(const std::vector<Evidence>& evidence, con
         tier = ResponseTier::MONITOR;
     }
 
-    return PolicyDecision{g_policy.name, riskScore, confidence, tier, deferred, accelerated, evidence};
+    const std::string driverCheck = topThreat ? topThreat->check : std::string("unknown");
+    ThreatLevel mapped = MapThreat(driverCheck, tier);
+    return PolicyDecision{g_policy.name, riskScore, confidence, tier, deferred, accelerated, evidence, mapped};
 }
 
 } // namespace IronLock::Core

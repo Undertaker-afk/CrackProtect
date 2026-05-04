@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include "Response.h"
+
 namespace IronLock::Core {
 
 enum class ResponseTier {
@@ -41,6 +43,7 @@ struct PolicyDecision {
     bool deferred;
     bool accelerated;
     std::vector<Evidence> evidence;
+    ThreatLevel mappedThreat;
 };
 
 class PolicyEngine {
@@ -48,6 +51,7 @@ public:
     static void Initialize(const std::string& policyName = "balanced");
     static const Policy& ActivePolicy();
     static PolicyDecision Evaluate(const std::vector<Evidence>& evidence, const EvaluationContext& context);
+    static ThreatLevel MapThreat(const std::string& check, ResponseTier tier);
 
 private:
     static Policy LoadPolicy(const std::string& policyName);
