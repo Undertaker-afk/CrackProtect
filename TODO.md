@@ -1,25 +1,23 @@
 # IronLock Protection SDK - TODO & Roadmap
 
 ## ✅ Completed Features
-- [x] **NotRequiem/antidbg Full Integration**: DONE
-- [x] **AdvDebug/AntiCrack-DotNet Full Integration**: DONE
-- [x] **IronLock Compiler Engine (cl-wrapper)**: DONE
-- [x] **IronLock Transpiler (Source-to-Bytecode)**: DONE
+- [x] **Hell's Gate / Halo's Gate Syscall Discovery**: DONE
+- [x] **Manual PEB Export Resolver with Stealth Caching**: DONE
+- [x] **Production-Grade AES-256 and FNV-1a**: DONE
 - [x] **Triple Redundant Integrity System**: DONE
-- [x] **Function Name Randomization Suite**: DONE
-- [x] **Production-Grade AES-256**: DONE
-- [x] **20+ Bait Functions (Honeypots)**: DONE
+- [x] **20+ Functional Bait Functions (Honeypots)**: DONE
 - [x] **Anti-Attach Patching (DbgUiRemoteBreakin)**: DONE
-- [x] **Direct Syscalls (Hell's/Halo's Gate)**: DONE
-- [x] **Process Hollowing & Injected Thread Detection**: DONE
-- [x] **GitHub CI/CD Automation (Automated .lib Releases)**: DONE
+- [x] **TUI Demo Loader with Real-time Logging**: DONE
+- [x] **IronLock Compiler Engine (cl-wrapper)**: DONE
+- [x] **GitHub CI/CD Automation**: DONE
+- [x] **Basic VM Transpiler**: DONE
 
 ## 🚀 Roadmap (Next 30+ Features)
 1.  [ ] **Kernel-mode protection driver**: Move core checks to Ring 0.
-2.  [ ] **Polymorphic VM**: Generate a completely new instruction set per build.
-3.  [ ] **Control Flow Flattening (CFF)**: Fully implement LLVM-style CFF.
-4.  [ ] **Import Address Table (IAT) Camouflage**: Encrypt and resolve IAT entries lazily.
-5.  [ ] **Instruction Overlapping (Module 7 advanced)**: Full coverage for critical logic.
+2.  [ ] **Full Source-to-Bytecode Transpiler**: Support all C++ constructs.
+3.  [ ] **Polymorphic VM**: Generate a completely new instruction set per build.
+4.  [ ] **Control Flow Flattening (CFF)**: Fully implement LLVM-style CFF.
+5.  [ ] **Import Address Table (IAT) Camouflage**: Encrypt and resolve IAT entries lazily.
 6.  [ ] **Windows 11 VBS/HVCI Detection**: Deep hypervisor state inspection.
 7.  [ ] **HWID Fingerprinting**: Strong hardware-based licensing.
 8.  [ ] **Server-Side Heartbeat**: Cloud-integrated protection.
@@ -46,3 +44,5 @@
 29. [ ] **Anti-Emulation Loops**: Use instructions that are difficult to emulate correctly.
 30. [ ] **Hardware Breakpoint Persistence**: Regularly verify and reset Dr registers.
 31. [ ] **Exception Flow Obfuscation**: Use SEH as a primary control flow mechanism.
+32. [ ] **Stack Spoofing**: Scramble return addresses to break stack walking.
+33. [ ] **Anti-Suspension**: Detect if the process has been suspended by a debugger.

@@ -5,6 +5,7 @@
 #include "../../core/Utils.h"
 #include <winternl.h>
 #include <intrin.h>
+#include <tlhelp32.h>
 
 extern "C" void CheckTrapFlagInternal();
 
@@ -103,6 +104,12 @@ bool CheckTimingDelta() {
     return (t2 - t1) > 0x10000;
 }
 
+bool CheckOutputDebugString() {
+    SetLastError(0);
+    OutputDebugStringA("IronLock");
+    return GetLastError() != 0;
+}
+
 bool CheckGuardPage() {
     SYSTEM_INFO si; GetSystemInfo(&si);
     LPVOID lpPage = VirtualAlloc(NULL, si.dwPageSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
@@ -122,19 +129,59 @@ bool CheckTrapFlag() {
 }
 
 bool CheckParentProcess() {
-    // Feature implementation using NtQueryInformationProcess
-    // In a real loader, parent should be explorer.exe or our CLI protector
+    struct PROCESS_BASIC_INFORMATION {
+        NTSTATUS ExitStatus;
+        PVOID PebBaseAddress;
+        ULONG_PTR AffintyMask;
+        LONG BasePriority;
+        ULONG_PTR UniqueProcessId;
+        ULONG_PTR InheritedFromUniqueProcessId;
+    } pbi;
+
+    if (Syscalls::DoSyscall(Hashing::HashString("NtQueryInformationProcess"), (HANDLE)-1, 0, &pbi, sizeof(pbi), NULL) == 0) {
+        HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if (hSnapshot != INVALID_HANDLE_VALUE) {
+            PROCESSENTRY32W pe; pe.dwSize = sizeof(pe);
+            if (Process32FirstW(hSnapshot, &pe)) {
+                do {
+                    if (pe.th32ProcessID == (DWORD)pbi.InheritedFromUniqueProcessId) {
+                        std::wstring parentName = pe.szExeFile;
+                        std::transform(parentName.begin(), parentName.end(), parentName.begin(), ::towlower);
+                        if (parentName.find(L"x64dbg") != std::wstring::npos || parentName.find(L"ida") != std::wstring::npos) {
+                            CloseHandle(hSnapshot); return true;
+                        }
+                    }
+                } while (Process32NextW(hSnapshot, &pe));
+            }
+            CloseHandle(hSnapshot);
+        }
+    }
     return false;
 }
 
 bool CheckSeDebugPrivilege() {
-    // Check if the process token has SeDebugPrivilege enabled
-    // Debuggers usually enable this to attach to other processes
+    HANDLE hToken;
+    if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken)) {
+        DWORD size = 0;
+        GetTokenInformation(hToken, TokenPrivileges, NULL, 0, &size);
+        std::vector<BYTE> buf(size);
+        if (GetTokenInformation(hToken, TokenPrivileges, buf.data(), size, &size)) {
+            PTOKEN_PRIVILEGES privs = (PTOKEN_PRIVILEGES)buf.data();
+            for (DWORD i = 0; i < privs->PrivilegeCount; i++) {
+                // SeDebugPrivilege LUID is usually 0:20
+                if (privs->Privileges[i].Luid.LowPart == 20 && (privs->Privileges[i].Attributes & SE_PRIVILEGE_ENABLED)) {
+                    CloseHandle(hToken);
+                    return true;
+                }
+            }
+        }
+        CloseHandle(hToken);
+    }
     return false;
 }
 
 bool CheckThreadHideFromDebugger() {
-    return (Syscalls::DoSyscall(Hashing::HashString("NtSetInformationThread"), (HANDLE)-2, 0x11, NULL, 0) != 0);
+    return (Syscalls::DoSyscall(Hashing::HashString("NtSetInformationThread"), (HANDLE)-2, 0x11, NULL, 0) == 0);
 }
 
 bool RunUserModeChecks() {
@@ -149,6 +196,8 @@ bool RunUserModeChecks() {
     res |= CheckTimingDelta();
     res |= CheckSoftwareBreakpoints();
     res |= CheckTrapFlag();
+    res |= CheckParentProcess();
+    res |= CheckSeDebugPrivilege();
     return res;
 }
 

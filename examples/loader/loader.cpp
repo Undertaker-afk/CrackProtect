@@ -2,63 +2,57 @@
 #include <iostream>
 #include <string>
 #include <windows.h>
+#include <vector>
 
-// IronLock TUI Demo Loader
-// Demonstrates how to use the SDK in a real-world application loader scenario.
+// IronLock TUI Loader v1.2
+// Comprehensive logging of security checks
+
+void LogCheck(const std::string& name, bool detected) {
+    std::cout << "[*] Check: " << name << " -> ";
+    if (detected) {
+        std::cout << "\033[1;31m[TAMPERED]\033[0m" << std::endl;
+    } else {
+        std::cout << "\033[1;32m[SAFE]\033[0m" << std::endl;
+    }
+}
 
 void OnThreatDetected(int reason) {
     std::cout << "\n[!] SECURITY VIOLATION DETECTED (Code: " << reason << ")" << std::endl;
-    std::cout << "[!] IronLock is taking protective action..." << std::endl;
-    // In a real loader, we would exit or trigger a logic bomb here.
-    Sleep(2000);
     exit(reason);
 }
 
-bool PerformLogin() {
-    std::string user, pass;
-    std::cout << "--- IronLock Secure Loader ---" << std::endl;
-    std::cout << "Username: ";
-    std::cin >> user;
-    std::cout << "Password: ";
-    std::cin >> pass;
-
-    // Simulate server-side check
-    if (user == "admin" && pass == "ironlock2024") {
-        std::cout << "[+] Login successful." << std::endl;
-        return true;
-    }
-    std::cout << "[-] Invalid credentials." << std::endl;
-    return false;
-}
-
 int main() {
-    // 1. Initialize IronLock SDK
+    std::cout << "--- IronLock Secure Loader v1.2 ---" << std::endl;
+
     if (!IronLock::ProtectionInit()) {
-        std::cerr << "[-] Failed to initialize IronLock Protection." << std::endl;
+        std::cerr << "[-] SDK Init Failed." << std::endl;
         return 1;
     }
 
-    // 2. Register security callback
     IronLock::RegisterTripwire(OnThreatDetected);
 
-    // 3. Initial environment sweep
-    std::cout << "[*] IronLock: Performing environment sweep..." << std::endl;
+    std::cout << "[*] Running detailed security sweep..." << std::endl;
+
+    LogCheck("User Debugger", IronLock::AntiDebug::IsDebuggerPresent());
+    LogCheck("Kernel Debugger", IronLock::AntiDebug::CheckKernelDebugger());
+    LogCheck("Virtual Machine", IronLock::AntiVM::IsRunningInVM());
+    LogCheck("Sandbox Env", IronLock::Sandbox::IsRunningInSandbox());
+    LogCheck("Network Proxy", !IronLock::Network::IsNetworkSafe());
+    LogCheck("Self Integrity", !IronLock::Integrity::CheckSelfIntegrity());
+
     if (!IronLock::IsEnvironmentSafe()) {
-        // SDK will call OnThreatDetected
+        std::cout << "\033[1;31m[-] Environment is UNSAFE. Exiting.\033[0m" << std::endl;
         return 1;
     }
 
-    // 4. Application Logic
-    if (PerformLogin()) {
-        std::cout << "[*] Loading protected application module..." << std::endl;
+    std::string user, pass;
+    std::cout << "\nUsername: "; std::cin >> user;
+    std::cout << "Password: "; std::cin >> pass;
 
-        // Continuous background checks
-        if (!IronLock::IsEnvironmentSafe()) return 1;
-
-        std::cout << "[+] Application running under IronLock protection." << std::endl;
+    if (user == "admin" && pass == "ironlock2024") {
+        std::cout << "[+] Protected application launched." << std::endl;
         std::cout << "Press ENTER to unload." << std::endl;
-        std::cin.ignore();
-        std::cin.get();
+        std::cin.ignore(); std::cin.get();
     }
 
     return 0;
