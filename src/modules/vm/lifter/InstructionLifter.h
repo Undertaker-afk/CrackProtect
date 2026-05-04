@@ -8,6 +8,10 @@
 
 namespace IronLock::Modules::VM::Lifter {
 
+// Global SSA counter for generating unique SSA value IDs
+extern uint32_t gSsaCounter;
+uint32_t NextSSA();
+
 struct DecodedInstruction {
     uint64_t address = 0;
     std::string mnemonic;

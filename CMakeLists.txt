@@ -33,6 +33,7 @@ set(ANTIDEBUG_SOURCES
 # Anti-VM
 set(ANTIVM_SOURCES
     src/modules/anti_vm/VMDetect_Generic.cpp
+    src/modules/anti_vm/VMDetect_VendorSpecific.cpp
 )
 
 # Sandbox
@@ -65,15 +66,18 @@ set(NETWORK_SOURCES
 set(OBFUSCATION_SOURCES
     src/modules/obfuscation/ControlFlow.cpp
     src/modules/obfuscation/TransformFramework.cpp
+    src/modules/obfuscation/ControlFlowFlattening.cpp
     src/modules/vm/VirtualMachine.cpp
     src/modules/vm/lifter/InstructionLifter.cpp
     src/modules/vm/lifter/IRNormalizer.cpp
     src/modules/vm/lifter/VirtualizationPass.cpp
     src/modules/vm/lifter/MixedExecution.cpp
+    src/modules/vm/lifter/FullX86Lifter.cpp
 )
 
 set(PACKER_SOURCES
     src/modules/packer/Packer.cpp
+    src/modules/packer/IATEncryption.cpp
 )
 
 # Polymorphism

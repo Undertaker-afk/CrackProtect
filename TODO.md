@@ -11,38 +11,77 @@
 - [x] **IronLock Compiler Engine (cl-wrapper)**: DONE
 - [x] **GitHub CI/CD Automation**: DONE
 - [x] **Basic VM Transpiler**: DONE
+- [x] **Full x86/x64 Instruction Lifter**: DONE (200+ instructions, ModRM/SIB, REX)
+- [x] **Control Flow Flattening (LLVM & Runtime)**: DONE
+- [x] **IAT Encryption with Runtime Decryption**: DONE
+- [x] **Vendor-Specific VM Detection**: DONE (VMware, VBox, Hyper-V, KVM, Xen, Parallels)
+- [x] **LLVM/Clang Plugin Integration**: DONE (CFF, string encryption, opaque predicates)
+- [x] **CI/CD Native Integration**: DONE (GitHub Actions, GitLab CI, Jenkins, Docker)
+- [x] **Self-Checksumming & Anti-Hooking**: DONE
+- [x] **PE Header Protection**: DONE
+- [x] **Code Healing & Auto-Repair**: DONE
+- [x] **HWID Licensing System**: DONE (Multi-component fingerprinting, weighted scoring, AES-256 encrypted licenses)
 
 ## 🚀 Roadmap (Next 30+ Features)
-1.  [ ] **Kernel-mode protection driver**: Move core checks to Ring 0.
-2.  [ ] **Full Source-to-Bytecode Transpiler**: Support all C++ constructs.
-3.  [ ] **Polymorphic VM**: Generate a completely new instruction set per build.
-4.  [ ] **Control Flow Flattening (CFF)**: Fully implement LLVM-style CFF.
-5.  [ ] **Import Address Table (IAT) Camouflage**: Encrypt and resolve IAT entries lazily.
-6.  [ ] **Windows 11 VBS/HVCI Detection**: Deep hypervisor state inspection.
-7.  [ ] **HWID Fingerprinting**: Strong hardware-based licensing.
-8.  [ ] **Server-Side Heartbeat**: Cloud-integrated protection.
-9.  [ ] **Section Name Randomization**: Per-build random PE section names.
-10. [ ] **TLS-based Header Restoration**: Move header wiping to earlier in the load process.
-11. [ ] **Memory Hook Restoration**: Automatically unhook critical APIs if tampered with.
-12. [ ] **GPU Artifact Detection**: Detect virtualized graphics drivers.
-13. [ ] **ACPI Table Inspection**: Scan for "SLIC" and other VM-related strings.
-14. [ ] **Custom PE Loader**: Implement a private loader to avoid system artifacts.
-15. [ ] **Anti-Analysis via Threading**: Use complex thread inter-dependencies.
-16. [ ] **Advanced Anti-Dump**: Mangle module lists and memory maps.
-17. [ ] **Fake Module Injection**: Inject decoys to confuse static analysis tools.
-18. [ ] **Multi-Layered Binary Encryption**: Encrypt the protected binary with multiple keys.
-19. [ ] **UEFI Level Protection**: Secure the boot process.
-20. [ ] **Instruction Level Obfuscation**: Mutate individual instructions at build time.
-21. [ ] **Symbol Strip & Mangle**: Remove and scramble all metadata.
-22. [ ] **Context-Aware Responses**: Tailor reactions based on the detected threat.
-23. [ ] **Self-Modifying Detection Code**: Change logic at runtime.
-24. [ ] **Stealthy Telemetry**: Exfiltrate data via covert channels.
-25. [ ] **User Interaction Fingerprinting**: Identify human vs. automated sandbox activity.
-26. [ ] **LDR Hook Detection**: Monitor for hooks in ntdll Loader functions.
-27. [ ] **Integrity Guard integration**: Leverage Windows CFG.
-28. [ ] **Floating Point VM Opcodes**: Expand virtualization capability.
-29. [ ] **Anti-Emulation Loops**: Use instructions that are difficult to emulate correctly.
-30. [ ] **Hardware Breakpoint Persistence**: Regularly verify and reset Dr registers.
-31. [ ] **Exception Flow Obfuscation**: Use SEH as a primary control flow mechanism.
-32. [ ] **Stack Spoofing**: Scramble return addresses to break stack walking.
-33. [ ] **Anti-Suspension**: Detect if the process has been suspended by a debugger.
+
+### 🔥 HIGH PRIORITY (Next Release)
+1.  [ ] **Time-Bomb Logic & Trial Enforcement** (#3): Native trial version support
+    - Expiration date enforcement
+    - Usage count limits
+    - Feature-gated functionality
+    
+2.  [ ] **Floating License Server** (#3): Enterprise LAN-based activation
+    - Lightweight TCP server
+    - Concurrent license management
+    - Lease-based checkout
+
+### ⚡ PERFORMANCE & COMPATIBILITY
+4.  [ ] **Hybrid Execution Mode** (#4): Selective virtualization
+    - Only protect security-critical functions
+    - Skip performance-critical loops
+    - Runtime profiling-based decisions
+    
+5.  [ ] **Exception Handling Virtualization** (#4): SEH inside VM
+    - Emulate Windows SEH structures
+    - Preserve crash reporting compatibility
+    - Vectored exception handler support
+
+### 🛡️ ADVANCED ANTI-TAMPER
+6.  [ ] **LDR Hook Detection** (#6): Monitor ntdll Loader functions
+7.  [ ] **Memory Hook Restoration** (#11): Auto-unhook critical APIs
+8.  [ ] **Stack Spoofing** (#32): Scramble return addresses
+9.  [ ] **Exception Flow Obfuscation** (#31): SEH-based control flow
+10. [ ] **Hardware Breakpoint Persistence** (#30): Continuous Dr register monitoring
+
+### 🎯 EVASION & STEALTH
+11. [ ] **GPU Artifact Detection** (#12): Virtual graphics drivers
+12. [ ] **ACPI Table Inspection** (#13): SLIC and VM strings
+13. [ ] **Windows 11 VBS/HVCI Detection** (#6): Hypervisor state inspection
+14. [ ] **Anti-Suspension Detection** (#33): Detect process suspension
+15. [ ] **User Interaction Fingerprinting** (#25): Human vs sandbox activity
+
+### 🔧 INFRASTRUCTURE
+16. [ ] **Kernel-mode Protection Driver** (#1): Ring 0 checks
+17. [ ] **Custom PE Loader** (#14): Private loader implementation
+18. [ ] **Multi-Layered Binary Encryption** (#18): Multiple encryption layers
+19. [ ] **Section Name Randomization** (#9): Per-build random names
+20. [ ] **TLS-based Header Restoration** (#10): Early header wiping
+
+### 🎨 OBFUSCATION ENHANCEMENTS
+21. [ ] **Polymorphic VM** (#3): New instruction set per build
+22. [ ] **Instruction Level Obfuscation** (#20): Mutation at build time
+23. [ ] **Symbol Strip & Mangle** (#21): Metadata removal
+24. [ ] **Anti-Emulation Loops** (#29): Difficult-to-emulate instructions
+25. [ ] **Floating Point VM Opcodes** (#28): FP instruction support
+
+### ☁️ CONNECTED FEATURES
+26. [ ] **Server-Side Heartbeat** (#8): Cloud integration
+27. [ ] **Stealthy Telemetry** (#24): Covert channel exfiltration
+28. [ ] **Context-Aware Responses** (#22): Threat-tailored reactions
+29. [ ] **Self-Modifying Detection Code** (#23): Runtime logic changes
+
+### 🏗️ ADVANCED PROTECTION
+30. [ ] **UEFI Level Protection** (#19): Boot process security
+31. [ ] **Fake Module Injection** (#17): Decoy modules
+32. [ ] **Advanced Anti-Dump** (#16): Module list mangling
+33. [ ] **Integrity Guard Integration** (#27): Windows CFG leverage
