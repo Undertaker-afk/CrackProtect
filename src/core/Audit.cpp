@@ -8,12 +8,21 @@
 namespace IronLock::Core {
 
 std::vector<std::string> Audit::m_logs;
+std::vector<AuditEvent> Audit::m_events;
 
 void Audit::Log(const std::string& event) {
     std::time_t now = std::time(nullptr);
     std::string t = std::ctime(&now);
     t.pop_back(); // remove newline
     m_logs.push_back("[" + t + "] " + event);
+}
+
+void Audit::LogEvent(const AuditEvent& event) {
+    m_events.push_back(event);
+}
+
+std::vector<AuditEvent> Audit::GetEvents() {
+    return m_events;
 }
 
 void Audit::Flush() {
@@ -33,6 +42,7 @@ void Audit::Flush() {
     // Write to hidden file or send to telemetry
     // ...
     m_logs.clear();
+    m_events.clear();
 }
 
 } // namespace IronLock::Core

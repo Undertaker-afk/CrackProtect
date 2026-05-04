@@ -1,6 +1,7 @@
 #include "IronLock/ProtectionSDK.h"
 #include "core/Syscalls.h"
 #include "core/Audit.h"
+#include "core/PolicyEngine.h"
 #include "modules/anti_debug/AntiDebug_User.h"
 #include "modules/anti_debug/AntiDebug_Kernel.h"
 #include "modules/anti_vm/VMDetect.h"
@@ -9,6 +10,9 @@
 #include "modules/memory/Integrity.h"
 #include "modules/tools/ToolDetect.h"
 #include "modules/vm/VirtualMachine.h"
+#include <vector>
+#include <ctime>
+#include <string>
 
 namespace IronLock {
 
@@ -22,8 +26,9 @@ bool ProtectionInit() {
     for (size_t i = 0; i < vmProfile.decodeTable.size(); ++i) vmProfile.decodeTable[i] = static_cast<uint8_t>(i);
     vmProfile.keySalt = {0xA5311E4Du, 0x9BC1022Fu, 0x74CC55A1u, 0x11EE0D99u};
     success = Modules::VM::VirtualMachine::InitializeRuntime(vmProfile) && success;
-        Modules::Memory::PatchAntiAttach();
-        Core::Audit::Log("IronLock SDK Initialized Successfully.");
+    Core::PolicyEngine::Initialize("balanced");
+    Modules::Memory::PatchAntiAttach();
+    Core::Audit::Log("IronLock SDK Initialized Successfully.");
     }
     return success;
 }
@@ -69,23 +74,52 @@ bool Integrity::CheckSelfIntegrity() {
 }
 
 bool IsEnvironmentSafe() {
-    bool safe = true;
+    std::vector<Core::Evidence> evidence;
 
-    if (AntiDebug::IsDebuggerPresent()) safe = false;
-    if (AntiDebug::CheckKernelDebugger()) safe = false;
-    if (AntiVM::IsRunningInVM()) safe = false;
-    if (Sandbox::IsRunningInSandbox()) safe = false;
-    if (!Network::IsNetworkSafe()) safe = false;
-    if (!Integrity::CheckSelfIntegrity()) safe = false;
+    const bool userDbg = AntiDebug::IsDebuggerPresent();
+    evidence.push_back({"anti_debug.user", userDbg, 0.90, 0.95, userDbg ? "User-mode debugger indicators present" : "No user-mode debugger evidence"});
 
-    if (Modules::Tools::RunAllToolChecks()) {
+    const bool kernelDbg = AntiDebug::CheckKernelDebugger();
+    evidence.push_back({"anti_debug.kernel", kernelDbg, 1.00, 0.90, kernelDbg ? "Kernel debugger state detected" : "Kernel debugger checks are clean"});
+
+    const bool vmDetected = AntiVM::IsRunningInVM();
+    evidence.push_back({"anti_vm", vmDetected, 0.65, 0.75, vmDetected ? "Virtualized environment fingerprints detected" : "No virtualization fingerprints"});
+
+    const bool sandboxDetected = Sandbox::IsRunningInSandbox();
+    evidence.push_back({"sandbox", sandboxDetected, 0.75, 0.80, sandboxDetected ? "Sandbox artifacts detected" : "No sandbox artifacts"});
+
+    const bool networkUnsafe = !Network::IsNetworkSafe();
+    evidence.push_back({"network", networkUnsafe, 0.50, 0.70, networkUnsafe ? "Network interception/VPN evidence detected" : "Network posture appears safe"});
+
+    const bool integrityUnsafe = !Integrity::CheckSelfIntegrity();
+    evidence.push_back({"integrity", integrityUnsafe, 0.95, 0.95, integrityUnsafe ? "Integrity violation or API hooks detected" : "Code integrity checks passed"});
+
+    const bool toolsDetected = Modules::Tools::RunAllToolChecks();
+    if (toolsDetected) {
         Core::Audit::Log("Analysis Tool detected in background");
-        safe = false;
+    }
+    evidence.push_back({"analysis_tools", toolsDetected, 0.80, 0.85, toolsDetected ? "Analysis tools running in background" : "No analysis tools detected"});
+
+    Core::EvaluationContext ctx{};
+    ctx.highValueTarget = integrityUnsafe || kernelDbg;
+    ctx.userFacingCriticalPath = !toolsDetected;
+
+    const Core::PolicyDecision decision = Core::PolicyEngine::Evaluate(evidence, ctx);
+
+    Core::Audit::LogEvent({
+        "policy.decision",
+        "Environment policy evaluation completed",
+        "policy=" + decision.policy + ",risk=" + std::to_string(decision.riskScore) + ",confidence=" + std::to_string(decision.confidence) +
+            ",tier=" + std::to_string(static_cast<int>(decision.tier)) + ",deferred=" + (decision.deferred ? "true" : "false") +
+            ",accelerated=" + (decision.accelerated ? "true" : "false"),
+        static_cast<uint64_t>(std::time(nullptr))
+    });
+
+    const bool safe = decision.tier == Core::ResponseTier::NONE || decision.tier == Core::ResponseTier::MONITOR;
+    if (!safe && g_Callback) {
+        g_Callback(static_cast<int>(decision.tier));
     }
 
-    if (!safe && g_Callback) {
-        g_Callback(1);
-    }
     return safe;
 }
 

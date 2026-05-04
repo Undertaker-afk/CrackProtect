@@ -20,6 +20,7 @@ set(CORE_SOURCES
     src/core/Response.cpp
     src/core/Audit.cpp
     src/core/Randomizer.cpp
+    src/core/PolicyEngine.cpp
 )
 
 # Anti-Debug
