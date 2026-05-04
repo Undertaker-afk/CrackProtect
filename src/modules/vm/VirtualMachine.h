@@ -60,8 +60,6 @@ public:
     static uint64_t Execute(const EncryptedProgram& program);
 
 private:
-    using HandlerFn = bool (*)(struct VMContext&, const std::vector<uint8_t>&);
-
     struct VMContext {
         std::array<uint64_t, 512> stack{};
         std::array<uint64_t, 4096> memory{};
@@ -72,6 +70,8 @@ private:
         bool zf = false;
         bool halted = false;
     };
+
+    using HandlerFn = bool (*)(VMContext&, const std::vector<uint8_t>&);
 
     static std::vector<uint8_t> DecryptProgram(const EncryptedProgram& program);
     static uint64_t DeriveKeyMaterial(const EncryptedProgram& program);
