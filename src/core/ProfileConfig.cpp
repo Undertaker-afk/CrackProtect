@@ -39,6 +39,12 @@ std::vector<std::string> ParseList(const std::string& text) {
     return out;
 }
 
+bool ParseBool(const std::string& value) {
+    std::string v = value;
+    std::transform(v.begin(), v.end(), v.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return v == "1" || v == "true" || v == "yes" || v == "on";
+}
+
 ProfileMode ParseMode(const std::string& value) {
     std::string v = value;
     std::transform(v.begin(), v.end(), v.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
@@ -92,6 +98,8 @@ std::optional<ProfileConfig> ProfileLoader::LoadFromPath(const std::string& path
     if (kv.count("profile.mode")) cfg.mode = ParseMode(StripQuotes(kv["profile.mode"]));
     if (kv.count("enabled_modules")) cfg.enabledModules = ParseList(kv["enabled_modules"]);
     if (kv.count("profile.enabled_modules")) cfg.enabledModules = ParseList(kv["profile.enabled_modules"]);
+    if (kv.count("telemetry_mode")) cfg.telemetryMode = ParseBool(StripQuotes(kv["telemetry_mode"]));
+    if (kv.count("profile.telemetry_mode")) cfg.telemetryMode = ParseBool(StripQuotes(kv["profile.telemetry_mode"]));
 
     return MigrateToCurrent(cfg);
 }

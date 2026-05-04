@@ -45,6 +45,11 @@ set(TOOLS_SOURCES
     src/modules/tools/ToolDetect.cpp
 )
 
+# Anti-analysis
+set(ANTIANALYSIS_SOURCES
+    src/modules/antianalysis/AntiAnalysis.cpp
+)
+
 # Memory & Integrity
 set(MEMORY_SOURCES
     src/modules/memory/Integrity.cpp
@@ -59,7 +64,16 @@ set(NETWORK_SOURCES
 # Obfuscation & VM
 set(OBFUSCATION_SOURCES
     src/modules/obfuscation/ControlFlow.cpp
+    src/modules/obfuscation/TransformFramework.cpp
     src/modules/vm/VirtualMachine.cpp
+    src/modules/vm/lifter/InstructionLifter.cpp
+    src/modules/vm/lifter/IRNormalizer.cpp
+    src/modules/vm/lifter/VirtualizationPass.cpp
+    src/modules/vm/lifter/MixedExecution.cpp
+)
+
+set(PACKER_SOURCES
+    src/modules/packer/Packer.cpp
 )
 
 # Polymorphism
@@ -80,10 +94,12 @@ set(SDK_SOURCES
     ${ANTIVM_SOURCES}
     ${SANDBOX_SOURCES}
     ${TOOLS_SOURCES}
+    ${ANTIANALYSIS_SOURCES}
     ${MEMORY_SOURCES}
     ${NETWORK_SOURCES}
     ${OBFUSCATION_SOURCES}
     ${POLYMORPH_SOURCES}
+    ${PACKER_SOURCES}
     ${ASM_SOURCES}
 )
 
@@ -105,3 +121,7 @@ target_link_libraries(IronLockDemo IronLock)
 # Demo Loader
 add_executable(IronLockLoader examples/loader/loader.cpp)
 target_link_libraries(IronLockLoader PRIVATE IronLock)
+
+
+add_executable(vm-lifter-harness tests/vm/lifter_harness.cpp)
+target_link_libraries(vm-lifter-harness PRIVATE IronLock)

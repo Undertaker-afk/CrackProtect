@@ -11,6 +11,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "../src/modules/packer/Packer.h"
+
 namespace {
 
 struct ProtectedRegion {
@@ -175,9 +177,92 @@ void WritePostLinkManifest(const std::filesystem::path& outPath, const BuildMani
     }
 }
 
+
+
+struct PackOptions {
+    bool enabled{false};
+    std::string inputPath;
+    std::string outputPath;
+    std::string configPath;
+    std::string reportPath{"pack-report.json"};
+};
+
+PackOptions ParsePackOptions(int argc, char* argv[]) {
+    PackOptions options;
+    for (int i = 1; i < argc; ++i) {
+        const std::string arg = argv[i];
+        if (arg == "--pack" && i + 2 < argc) {
+            options.enabled = true;
+            options.inputPath = argv[++i];
+            options.outputPath = argv[++i];
+        } else if (arg.rfind("--pack-config=", 0) == 0) {
+            options.configPath = arg.substr(14);
+        } else if (arg.rfind("--pack-report=", 0) == 0) {
+            options.reportPath = arg.substr(14);
+        }
+    }
+    return options;
+}
+
+IronLock::Packer::PackConfig LoadPackConfig(const PackOptions& options) {
+    IronLock::Packer::PackConfig cfg;
+    cfg.configPath = options.configPath;
+    cfg.reportPath = options.reportPath;
+    if (options.configPath.empty()) {
+        return cfg;
+    }
+
+    std::ifstream in(options.configPath);
+    std::string line;
+    while (std::getline(in, line)) {
+        auto eq = line.find('=');
+        if (eq == std::string::npos) continue;
+        auto key = Trim(line.substr(0, eq));
+        auto value = Trim(line.substr(eq + 1));
+        if (key == "include_rdata") cfg.includeRdata = (value == "1" || value == "true");
+        if (key == "exclude") {
+            auto comma = value.find(',');
+            if (comma != std::string::npos) {
+                IronLock::Packer::Range r;
+                r.start = static_cast<uint32_t>(std::stoul(value.substr(0, comma), nullptr, 0));
+                r.size = static_cast<uint32_t>(std::stoul(value.substr(comma + 1), nullptr, 0));
+                cfg.exclusionRanges.push_back(r);
+            }
+        }
+    }
+    return cfg;
+}
+
+void WritePackReport(const std::string& path, const IronLock::Packer::PackReport& report) {
+    std::ofstream out(path);
+    out << "{\n  \"success\": " << (report.success ? "true" : "false") << ",\n";
+    out << "  \"diagnostics\": [";
+    for (size_t i = 0; i < report.diagnostics.size(); ++i) {
+        if (i) out << ", ";
+        out << "\"" << report.diagnostics[i] << "\"";
+    }
+    out << "],\n  \"protectedSections\": [\n";
+    for (size_t i = 0; i < report.protectedSections.size(); ++i) {
+        const auto& s = report.protectedSections[i];
+        out << "    {\"name\":\"" << s.name << "\",\"rva\":" << s.rva
+            << ",\"size\":" << s.size << ",\"keyId\":" << s.keyId << ",\"flags\":" << s.flags << "}";
+        if (i + 1 < report.protectedSections.size()) out << ",";
+        out << "\n";
+    }
+    out << "  ]\n}\n";
+}
 }  // namespace
 
 int main(int argc, char* argv[]) {
+    const auto packOptions = ParsePackOptions(argc, argv);
+    if (packOptions.enabled) {
+        auto config = LoadPackConfig(packOptions);
+        const auto report = IronLock::Packer::PackBinary(packOptions.inputPath, packOptions.outputPath, config);
+        WritePackReport(packOptions.reportPath, report);
+        std::cout << (report.success ? "[+]" : "[!]") << " IronLock: pack pipeline complete. report=" << packOptions.reportPath << "\n";
+        return report.success ? 0 : 1;
+    }
+
     std::stringstream cmd;
     cmd << "cl.exe";
 

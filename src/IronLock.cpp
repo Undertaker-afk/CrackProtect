@@ -12,6 +12,7 @@
 #include "modules/memory/Integrity.h"
 #include "modules/tools/ToolDetect.h"
 #include "modules/vm/VirtualMachine.h"
+#include "modules/antianalysis/AntiAnalysis.h"
 #include <vector>
 #include <ctime>
 #include <string>
@@ -43,6 +44,7 @@ bool ProtectionInit() {
     success = Modules::VM::VirtualMachine::InitializeRuntime(vmProfile) && success;
     Core::PolicyEngine::Initialize(profile.responsePolicy);
     Core::Response::ConfigureDeterministicMode(profile.mode == Core::ProfileMode::DETERMINISTIC);
+    Modules::AntiAnalysis::ConfigureTelemetry(profile.telemetryMode);
     Modules::Memory::PatchAntiAttach();
     Core::Audit::Log("IronLock SDK Initialized Successfully.");
     }
@@ -115,6 +117,15 @@ bool IsEnvironmentSafe() {
         Core::Audit::Log("Analysis Tool detected in background");
     }
     evidence.push_back({"analysis_tools", toolsDetected, 0.80, 0.85, toolsDetected ? "Analysis tools running in background" : "No analysis tools detected"});
+
+    const bool antiAnalysisEnabled = Core::ProfileLoader::IsModuleEnabled(g_RuntimeProfile, "anti_analysis");
+    if (antiAnalysisEnabled) {
+        const auto aa = Modules::AntiAnalysis::RunAllChecks();
+        evidence.push_back({"anti_analysis", aa.suspicious, aa.aggregateScore, 0.88, aa.suspicious ? "Multi-signal anti-analysis policy exceeded threshold" : "Anti-analysis signal score below policy threshold"});
+        for (const auto& signal : aa.signals) {
+            evidence.push_back({signal.check, signal.suspicious, signal.score, signal.confidence, signal.reason});
+        }
+    }
 
     Core::EvaluationContext ctx{};
     ctx.highValueTarget = integrityUnsafe || kernelDbg;
