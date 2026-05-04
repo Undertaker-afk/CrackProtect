@@ -13,12 +13,15 @@ enum class ThreatLevel {
 class Response {
 public:
     static void Trigger(ThreatLevel level);
+    static bool IsMisdirected();
 
-private:
+    // Specific Response Actions
     static void SilentCorruption();
     static void Misdirect();
     static void DelayedCrash();
     static void HardTerminate();
+    static void FakeCorruption();
+    static void SystemBSOD();
 };
 
 } // namespace IronLock::Core

@@ -2,6 +2,7 @@
 #include "../../core/Resolver.h"
 #include "../../core/Syscalls.h"
 #include "../../core/Hashing.h"
+#include "../../core/Utils.h"
 #include <winternl.h>
 #include <intrin.h>
 
@@ -74,7 +75,7 @@ bool CheckHardwareBreakpoints() {
     ctx.ContextFlags = CONTEXT_DEBUG_REGISTERS;
     auto pGetThreadContext = Resolver::GetExport<decltype(&GetThreadContext)>(Hashing::HashStringW(L"kernel32.dll"), Hashing::HashString("GetThreadContext"));
     if (pGetThreadContext && pGetThreadContext(GetCurrentThread(), &ctx)) {
-        return (ctx.Dr0 != 0 || ctx.Dr1 != 0 || ctx.Dr2 != 0 || ctx.Dr3 != 0);
+        return (ctx.Dr0 != 0 || ctx.Dr1 != 0 || ctx.Dr2 || ctx.Dr3 != 0);
     }
     return false;
 }
@@ -115,9 +116,9 @@ bool CheckGuardPage() {
     DWORD dwOldProtect;
     VirtualProtect(lpPage, si.dwPageSize, PAGE_READWRITE | PAGE_GUARD, &dwOldProtect);
     __try { *(BYTE*)lpPage = 1; }
-    __except (EXCEPTION_EXECUTE_HANDLER) { VirtualFree(lpPage, 0, MEM_RELEASE); return false; }
+    __except (EXCEPTION_EXECUTE_HANDLER) { VirtualFree(lpPage, 0, MEM_RELEASE); return true; }
     VirtualFree(lpPage, 0, MEM_RELEASE);
-    return true;
+    return false;
 }
 
 bool CheckTrapFlag() {
@@ -130,19 +131,22 @@ bool CheckTrapFlag() {
 }
 
 bool CheckParentProcess() {
+    // Valid parent is usually explorer.exe or cmd.exe
     return false;
 }
 
 bool CheckSeDebugPrivilege() {
+    HANDLE hToken;
+    if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken)) {
+        // Logic to check SE_DEBUG_NAME
+        CloseHandle(hToken);
+    }
     return false;
 }
 
 bool CheckThreadHideFromDebugger() {
+    // NtSetInformationThread with ThreadHideFromDebugger
     return (Syscalls::DoSyscall(Hashing::HashString("NtSetInformationThread"), (HANDLE)-2, 0x11, NULL, 0) != 0);
-}
-
-bool CheckDebugApiHooks() {
-    return false;
 }
 
 bool RunUserModeChecks() {

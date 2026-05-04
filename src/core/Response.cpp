@@ -4,10 +4,12 @@
 #include <thread>
 #include <chrono>
 #include <windows.h>
+#include <atomic>
 
 namespace IronLock::Core {
 
 static volatile uint64_t g_DecoyGlobalState = 0x1234567887654321;
+static std::atomic<bool> g_MisdirectMode{ false };
 
 void Response::Trigger(ThreatLevel level) {
     switch (level) {
@@ -19,12 +21,18 @@ void Response::Trigger(ThreatLevel level) {
 }
 
 void Response::SilentCorruption() {
-    // Logic Bomb: Corrupt internal state without immediate failure
     g_DecoyGlobalState ^= (1ULL << (__rdtsc() % 64));
 }
 
 void Response::Misdirect() {
-    // Return fake valid results (implementation dependent on caller context)
+    // Enable Misdirect Mode
+    // When active, other parts of the application (or SDK) can check this
+    // and return fake "Success" or "License Valid" results to the analyst.
+    g_MisdirectMode.store(true);
+}
+
+bool Response::IsMisdirected() {
+    return g_MisdirectMode.load();
 }
 
 void Response::DelayedCrash() {
