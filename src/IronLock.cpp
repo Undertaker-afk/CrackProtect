@@ -8,6 +8,7 @@
 #include "modules/network/NetworkProtection.h"
 #include "modules/memory/Integrity.h"
 #include "modules/tools/ToolDetect.h"
+#include "modules/vm/VirtualMachine.h"
 
 namespace IronLock {
 
@@ -16,6 +17,11 @@ static TripwireCallback g_Callback = nullptr;
 bool ProtectionInit() {
     bool success = Core::Syscalls::Initialize();
     if (success) {
+
+    Modules::VM::VirtualMachine::RuntimeProfile vmProfile{};
+    for (size_t i = 0; i < vmProfile.decodeTable.size(); ++i) vmProfile.decodeTable[i] = static_cast<uint8_t>(i);
+    vmProfile.keySalt = {0xA5311E4Du, 0x9BC1022Fu, 0x74CC55A1u, 0x11EE0D99u};
+    success = Modules::VM::VirtualMachine::InitializeRuntime(vmProfile) && success;
         Modules::Memory::PatchAntiAttach();
         Core::Audit::Log("IronLock SDK Initialized Successfully.");
     }
