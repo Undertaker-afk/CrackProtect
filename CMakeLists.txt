@@ -45,6 +45,11 @@ set(TOOLS_SOURCES
     src/modules/tools/ToolDetect.cpp
 )
 
+# Anti-analysis
+set(ANTIANALYSIS_SOURCES
+    src/modules/antianalysis/AntiAnalysis.cpp
+)
+
 # Memory & Integrity
 set(MEMORY_SOURCES
     src/modules/memory/Integrity.cpp
@@ -84,6 +89,7 @@ set(SDK_SOURCES
     ${ANTIVM_SOURCES}
     ${SANDBOX_SOURCES}
     ${TOOLS_SOURCES}
+    ${ANTIANALYSIS_SOURCES}
     ${MEMORY_SOURCES}
     ${NETWORK_SOURCES}
     ${OBFUSCATION_SOURCES}
