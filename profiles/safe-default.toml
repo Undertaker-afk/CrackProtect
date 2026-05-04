@@ -1,0 +1,6 @@
+schema_version = 2
+enabled_modules = ["anti_debug", "integrity", "sandbox", "analysis_tools"]
+aggressiveness = 35
+response_policy = "balanced"
+virtualization_scope = "sensitive"
+mode = "default"

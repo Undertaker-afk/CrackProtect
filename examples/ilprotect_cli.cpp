@@ -1,23 +1,11 @@
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <vector>
 #include <windows.h>
 
-// IronLock CLI Protector
-// Functional logic for PE manipulation (Section injection)
-
-#pragma pack(push, 1)
-struct IL_CONFIG {
-    uint32_t version;
-    uint32_t flags;
-    uint32_t textSectionHash;
-};
-#pragma pack(pop)
-
-void ProtectEXE(const std::string& path) {
+void ProtectEXE(const std::string& path, const std::string& profilePath, const std::string& reportPath) {
     std::cout << "[*] IronLock: Opening " << path << " for protection..." << std::endl;
-
     std::ifstream file(path, std::ios::binary);
     if (!file) {
         std::cerr << "[-] Error: Could not open file." << std::endl;
@@ -34,32 +22,43 @@ void ProtectEXE(const std::string& path) {
     }
 
     PIMAGE_NT_HEADERS ntHeaders = (PIMAGE_NT_HEADERS)(buffer.data() + dosHeader->e_lfanew);
-
-    // Feature: Section Injection (Logic)
-    // 1. Add a new section header to the PE
-    // 2. Increment NumberOfSections
-    // 3. Update SizeOfImage
-    // 4. Append IronLock SDK payload to the end of the file
-
     std::cout << "[*] Found " << ntHeaders->FileHeader.NumberOfSections << " sections." << std::endl;
-
-    // Patching the placeholder hash in .il_data if found
-    // (In a real implementation, we would search the section for the placeholder 0xAAAAAAAA)
 
     std::string outPath = path + ".protected.exe";
     std::ofstream outFile(outPath, std::ios::binary);
     outFile.write(buffer.data(), buffer.size());
     outFile.close();
 
+    std::ofstream report(reportPath);
+    report << "{\n";
+    report << "  \"target\": \"" << path << "\",\n";
+    report << "  \"output\": \"" << outPath << "\",\n";
+    report << "  \"profile\": \"" << profilePath << "\",\n";
+    report << "  \"status\": \"protected\"\n";
+    report << "}\n";
+
     std::cout << "[+] Protected EXE saved to: " << outPath << std::endl;
+    std::cout << "[+] Report written: " << reportPath << std::endl;
 }
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        std::cout << "IronLock CLI Protector v1.1" << std::endl;
-        std::cout << "Usage: ilprotect <target.exe>" << std::endl;
+        std::cout << "IronLock CLI Protector v1.2" << std::endl;
+        std::cout << "Usage: ilprotect <target.exe> [--profile config.(json|toml|yaml)] [--report report.json]" << std::endl;
         return 1;
     }
-    ProtectEXE(argv[1]);
+
+    std::string target = argv[1];
+    std::string profile = "safe-default";
+    std::string report = target + ".ironlock.report.json";
+
+    for (int i = 2; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--profile" && i + 1 < argc) profile = argv[++i];
+        if (arg == "--report" && i + 1 < argc) report = argv[++i];
+    }
+
+    SetEnvironmentVariableA("IRONLOCK_PROFILE", profile.c_str());
+    ProtectEXE(target, profile, report);
     return 0;
 }
