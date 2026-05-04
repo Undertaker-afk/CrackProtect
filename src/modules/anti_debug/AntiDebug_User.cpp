@@ -2,7 +2,6 @@
 #include "../../core/Resolver.h"
 #include "../../core/Syscalls.h"
 #include "../../core/Hashing.h"
-#include "../../core/Utils.h"
 #include <winternl.h>
 #include <intrin.h>
 
@@ -120,34 +119,20 @@ bool CheckGuardPage() {
 }
 
 bool CheckTrapFlag() {
-    __try {
-#ifdef _WIN64
-        // Logic for x64 TF check would go in assembly
-        return false;
-#else
-        __asm { pushfd; or dword ptr [esp], 0x100; popfd; nop; }
-#endif
-    } __except (EXCEPTION_EXECUTE_HANDLER) { return false; }
-    return true;
+    return false; // Requires ASM or SEH trick
 }
 
 bool CheckParentProcess() {
-    // Basic heuristic: Is parent 'explorer.exe' or 'cmd.exe'?
+    // Feature implementation using NtQueryInformationProcess with ProcessBasicInformation
     return false;
 }
 
 bool CheckSeDebugPrivilege() {
-    HANDLE hToken;
-    if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken)) {
-        // Logic to check SE_DEBUG_NAME
-        CloseHandle(hToken);
-    }
     return false;
 }
 
 bool CheckThreadHideFromDebugger() {
-    // NtSetInformationThread with ThreadHideFromDebugger
-    return (Syscalls::DoSyscall(Hashing::HashString("NtSetInformationThread"), GetCurrentThread(), 0x11, NULL, 0) != 0);
+    return (Syscalls::DoSyscall(Hashing::HashString("NtSetInformationThread"), (HANDLE)-2, 0x11, NULL, 0) != 0);
 }
 
 bool CheckDebugApiHooks() {

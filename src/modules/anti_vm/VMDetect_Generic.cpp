@@ -5,8 +5,6 @@
 #include <vector>
 #include <string>
 
-extern "C" bool CheckVMwareBackdoorInternal();
-
 namespace IronLock::Modules::AntiVM {
 
 bool CheckHypervisorBit() {
@@ -50,13 +48,8 @@ bool CheckDrivers() {
     return false;
 }
 
-bool CheckVMwareBackdoor() {
-    return false;
-}
-
-bool CheckVBoxArtifacts() {
-    return GetFileAttributesW(L"C:\\Windows\\System32\\drivers\\VBoxMouse.sys") != INVALID_FILE_ATTRIBUTES;
-}
+bool CheckVMwareBackdoor() { return false; }
+bool CheckVBoxArtifacts() { return false; }
 
 bool CheckHyperV() {
     int cpuInfo[4];
@@ -65,7 +58,7 @@ bool CheckHyperV() {
 }
 
 bool RunAllVMChecks() {
-    return CheckHypervisorBit() || CheckCPUID() || CheckDrivers() || CheckRegistryKeys() || CheckVBoxArtifacts() || CheckHyperV();
+    return CheckHypervisorBit() || CheckCPUID() || CheckDrivers() || CheckRegistryKeys() || CheckHyperV();
 }
 
 } // namespace IronLock::Modules::AntiVM

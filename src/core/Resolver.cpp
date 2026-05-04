@@ -13,7 +13,6 @@ typedef struct _LDR_DATA_TABLE_ENTRY_INTERNAL {
     ULONG SizeOfImage;
     UNICODE_STRING FullDllName;
     UNICODE_STRING BaseDllName;
-    // ... rest of structure
 } LDR_DATA_TABLE_ENTRY_INTERNAL, *PLDR_DATA_TABLE_ENTRY_INTERNAL;
 
 PVOID Resolver::GetModuleBase(uint32_t moduleHash) {
@@ -23,33 +22,30 @@ PVOID Resolver::GetModuleBase(uint32_t moduleHash) {
     PPEB peb = (PPEB)__readfsdword(0x30);
 #endif
 
+    if (moduleHash == 0) return peb->ImageBaseAddress;
+
     PLIST_ENTRY head = &peb->Ldr->InMemoryOrderModuleList;
     PLIST_ENTRY current = head->Flink;
 
     while (current != head) {
-        // InMemoryOrderModuleList links to the InMemoryOrderLinks field of LDR_DATA_TABLE_ENTRY
-        // We need to adjust the pointer to get to the start of the structure or access fields relative to it
         PLDR_DATA_TABLE_ENTRY_INTERNAL entry = CONTAINING_RECORD(current, LDR_DATA_TABLE_ENTRY_INTERNAL, InMemoryOrderLinks);
 
         if (entry->BaseDllName.Buffer) {
             uint32_t hash = Hashing::HashStringW(std::wstring_view(entry->BaseDllName.Buffer, entry->BaseDllName.Length / sizeof(wchar_t)));
-            if (hash == moduleHash) {
-                return entry->DllBase;
-            }
+            if (hash == moduleHash) return entry->DllBase;
         }
         current = current->Flink;
     }
-
     return nullptr;
 }
 
 PVOID Resolver::GetExport(PVOID moduleBase, uint32_t exportHash) {
+    if (!moduleBase) return nullptr;
+
     PIMAGE_DOS_HEADER dosHeader = (PIMAGE_DOS_HEADER)moduleBase;
     if (dosHeader->e_magic != IMAGE_DOS_SIGNATURE) return nullptr;
 
     PIMAGE_NT_HEADERS ntHeaders = (PIMAGE_NT_HEADERS)((BYTE*)moduleBase + dosHeader->e_lfanew);
-    if (ntHeaders->Signature != IMAGE_NT_SIGNATURE) return nullptr;
-
     DWORD exportDirRva = ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
     if (exportDirRva == 0) return nullptr;
 
@@ -64,6 +60,9 @@ PVOID Resolver::GetExport(PVOID moduleBase, uint32_t exportHash) {
             return (BYTE*)moduleBase + functions[ordinals[i]];
         }
     }
+
+    // Support for resolving by ordinal if hash is within a certain range or specially marked
+    // (Ordinal resolution logic would go here)
 
     return nullptr;
 }

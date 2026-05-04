@@ -1,0 +1,32 @@
+name: Protect My Application with IronLock
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-protect:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Download IronLock Artifacts
+      # In a real scenario, you'd download from your releases
+      run: |
+        echo "Fetching IronLock SDK..."
+        # curl -L -o IronLock-SDK.zip https://github.com/your/repo/releases/download/v1.0/IronLock-SDK.zip
+        # 7z x IronLock-SDK.zip -oIronLock
+
+    - name: Build Application with IronLock Compiler
+      run: |
+        # Use the IronLock compiler wrapper instead of raw cl.exe
+        .\IronLock\tools\ironlock-cl.exe /O2 /Fe:MyApp.exe src/main.cpp src/other.cpp
+
+    - name: Upload Protected Binary
+      uses: actions/upload-artifact@v3
+      with:
+        name: Protected-Binary
+        path: MyApp.exe
