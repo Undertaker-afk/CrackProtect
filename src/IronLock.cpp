@@ -14,12 +14,18 @@ namespace IronLock {
 static TripwireCallback g_Callback = nullptr;
 
 bool ProtectionInit() {
-    return Core::Syscalls::Initialize();
+    bool success = Core::Syscalls::Initialize();
+    if (success) {
+        // Feature 17: Anti-Attach Patching on Init
+        Modules::Memory::PatchAntiAttach();
+        Core::Audit::Log("IronLock SDK Initialized Successfully.");
+    }
+    return success;
 }
 
 bool AntiDebug::IsDebuggerPresent() {
     bool detected = Modules::AntiDebug::RunUserModeChecks();
-    if (detected) Core::Audit::Log("Debugger Detected");
+    if (detected) Core::Audit::Log("Debugger Detected via User-Mode Checks");
     return detected;
 }
 
@@ -31,20 +37,20 @@ bool AntiDebug::CheckKernelDebugger() {
 
 bool AntiVM::IsRunningInVM() {
     bool detected = Modules::AntiVM::RunAllVMChecks();
-    if (detected) Core::Audit::Log("VM Detected");
+    if (detected) Core::Audit::Log("Execution in Virtual Machine Detected");
     return detected;
 }
 
 bool Sandbox::IsRunningInSandbox() {
     bool detected = Modules::Sandbox::RunAllSandboxChecks();
-    if (detected) Core::Audit::Log("Sandbox Detected");
+    if (detected) Core::Audit::Log("Execution in Sandbox Detected");
     return detected;
 }
 
 bool Network::IsNetworkSafe() {
-    bool detected = !Modules::Network::RunAllNetworkChecks();
-    if (!detected) Core::Audit::Log("Network Unsafe Detected");
-    return detected;
+    bool unsafe = Modules::Network::RunAllNetworkChecks();
+    if (unsafe) Core::Audit::Log("Network Interception/VPN Detected");
+    return !unsafe;
 }
 
 bool Network::IsVpnActive() {
@@ -53,20 +59,24 @@ bool Network::IsVpnActive() {
 
 bool Integrity::CheckSelfIntegrity() {
     bool safe = Modules::Memory::VerifySectionIntegrity() && !Modules::Memory::DetectHooks();
-    if (!safe) Core::Audit::Log("Integrity Violation Detected");
+    if (!safe) Core::Audit::Log("Integrity Violation: .text section or API hooks found");
     return safe;
 }
 
 bool IsEnvironmentSafe() {
     bool safe = true;
+
+    // Aggregated checks with Audit logging
     if (AntiDebug::IsDebuggerPresent()) safe = false;
     if (AntiDebug::CheckKernelDebugger()) safe = false;
     if (AntiVM::IsRunningInVM()) safe = false;
     if (Sandbox::IsRunningInSandbox()) safe = false;
     if (!Network::IsNetworkSafe()) safe = false;
     if (!Integrity::CheckSelfIntegrity()) safe = false;
+
+    // Feature 5: Tool Detection integration
     if (Modules::Tools::RunAllToolChecks()) {
-        Core::Audit::Log("Analysis Tool Detected");
+        Core::Audit::Log("Analysis Tool detected in background");
         safe = false;
     }
 

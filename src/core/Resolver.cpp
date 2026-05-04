@@ -1,5 +1,6 @@
 #include "Resolver.h"
 #include <string>
+#include <intrin.h>
 
 namespace IronLock::Core {
 
